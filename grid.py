@@ -13,7 +13,30 @@ class IndicSelectWindow(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(IndicSelectWindow, self).__init__(parent=parent)
         self.resize(500, 400)
-        self.layout = QtWidgets.QHBoxLayout(self)
+        self.mainLayout = QtWidgets.QVBoxLayout(self)
+        self.gridAreaLayout = QtWidgets.QHBoxLayout()
+        self.buttonAreaLayout = QtWidgets.QHBoxLayout()
+
+        # Build row of buttons
+        self.doorButton = QtWidgets.QPushButton()
+        self.keypadDoorButton = QtWidgets.QPushButton()
+        self.saveButton = QtWidgets.QPushButton()
+        self.loadButton = QtWidgets.QPushButton()
+
+        self.doorButton.setText("Add door")
+        self.keypadDoorButton.setText("Add door with keypad")
+        self.saveButton.setText("Save to file")
+        self.loadButton.setText("Load from file")
+
+        self.doorButton.setEnabled(False)
+        self.keypadDoorButton.setEnabled(False)
+
+        self.buttonAreaLayout.addWidget(self.doorButton)
+        self.buttonAreaLayout.addWidget(self.keypadDoorButton)
+        self.buttonAreaLayout.addWidget(self.saveButton)
+        self.buttonAreaLayout.addWidget(self.loadButton)
+
+        # Build scrollable grid area
         self.scrollArea = QtWidgets.QScrollArea(self)
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
@@ -21,8 +44,11 @@ class IndicSelectWindow(QtWidgets.QDialog):
         self.gridLayout.setHorizontalSpacing(2)
         self.gridLayout.setVerticalSpacing(2)
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
-        self.layout.addWidget(self.scrollArea)
-        self.selectedTile = None
+        self.gridAreaLayout.addWidget(self.scrollArea)
+
+        self.mainLayout.addLayout(self.buttonAreaLayout)
+        self.mainLayout.addLayout(self.gridAreaLayout)
+        self.selectedPosition = None
 
         for i in range(100):
             for j in range(100):
@@ -68,14 +94,26 @@ class IndicSelectWindow(QtWidgets.QDialog):
 
         return QtCore.QObject.event(obj, event)
 
+    def setSelectedPosition(self, button):
+        self.selectedPosition = self.getButtonPosition(button)
+        newstate = False
+
+        if self.selectedPosition in _tiles:
+            newstate = True
+
+        for btn in [self.doorButton, self.keypadDoorButton]:
+            if btn.isEnabled != newstate:
+                btn.setEnabled(newstate)
+
     def onMiddleClick(self, button):
         pass
 
     def onRightClick(self, button):
-        self.selectedTile = self.getButtonPosition(button)
+        self.setSelectedPosition(button)
 
     def onLeftClick(self, button):
         position = self.getButtonPosition(button)
+        self.setSelectedPosition(button)
 
         if position in _tiles:
             tile = _tiles[position]
@@ -97,7 +135,6 @@ class IndicSelectWindow(QtWidgets.QDialog):
         dialog = QtAutoForm(tile, spec)
         dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         dialog.exec_()
-        self.selectedTile = position
 
         # Dialog was cancelled, we're done
         if not dialog.wasAccepted():
@@ -105,6 +142,7 @@ class IndicSelectWindow(QtWidgets.QDialog):
 
         button.setText(str(tile.tile_id))
         _tiles[position] = tile
+        self.setSelectedPosition(button)
 
         # Connect tile to surrounding tiles
         north, south, east, west = self.surroundingTiles(position)
