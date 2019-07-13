@@ -70,10 +70,16 @@ class QtAutoForm(QDialog):
 
         self.setLayout(mainLayout)
         self.setWindowTitle("Editor")
+        self.accepted = False
 
     def writeInstanceValues(self):
         for widget in self.widgets:
             widget.setInstanceValue()
+
+        self.accepted = True
+
+    def wasAccepted(self):
+        return self.accepted
 
     def createFormFromInstance(self, instance):
         classname = instance.__class__.__name__
