@@ -1,8 +1,6 @@
-from PyQt5.QtWidgets import (QApplication, QDialog, QDialogButtonBox,
+from PyQt5.QtWidgets import (QDialog, QDialogButtonBox,
     QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-    QSpinBox, QDoubleSpinBox, QTextEdit, QVBoxLayout, QCheckBox)
-
-import sys
+    QSpinBox, QDoubleSpinBox, QTextEdit, QVBoxLayout, QCheckBox, QSizePolicy)
 
 _input_decoders = {
     'str': (lambda x: x.text(), lambda x, y: x.setText(y), lambda: QLineEdit()),
@@ -18,6 +16,7 @@ class InputWidget(object):
         self.value_getter = value_getter
         self.value_setter = value_setter
         self.widget = widget_getter()
+        self.label = QLabel("%s:" % self.attr)
 
     def setInstanceValue(self):
         value = self.value_getter(self.widget)
@@ -28,29 +27,32 @@ class InputWidget(object):
         self.value_setter(self.widget, value)
 
     def rowItems(self):
-        return (QLabel("%s:" % self.attr), self.widget)
+        return self.label, self.widget
 
-class TestClass(object):
-    def __init__(self):
-        self.intval = 26
-        self.strval = "ditpojid"
-        self.floatval = 0.454
-        self.boolval = False
+def getInputWidgetForAttr(instance, attrname, spec):
+    if (spec is None) or (attrname not in spec):
+        typename = type(getattr(instance, attrname)).__name__
+        if typename not in _input_decoders:
+            typename = 'str'
+    else:
+        typename = spec[attrname]
 
-def getInputWidgetForAttr(instance, attrname):
-    typestr = type(getattr(instance, attrname)).__name__
-    if typestr not in _input_decoders:
-        typestr = 'str'
-
-    value_getter, value_setter, widget_getter = _input_decoders[typestr]
+    value_getter, value_setter, widget_getter = _input_decoders[typename]
     return InputWidget(instance, attrname, value_getter, value_setter, widget_getter)
 
-class Dialog(QDialog):
+class QtAutoForm(QDialog):
     NumGridRows = 3
     NumButtons = 4
 
-    def __init__(self, instance):
-        super(Dialog, self).__init__()
+    def __init__(self, instance, spec=None):
+        super(QtAutoForm, self).__init__()
+
+        if spec is not None:
+            for typename in spec.values():
+                if typename not in _input_decoders:
+                    raise ValueError("unknown type in spec: %s" % typename)
+
+        self.spec = spec
         self.widgets = []
         self.createFormFromInstance(instance)
 
@@ -62,8 +64,8 @@ class Dialog(QDialog):
         mainLayout = QVBoxLayout()
         mainLayout.addWidget(self.formGroupBox)
         mainLayout.addWidget(buttonBox)
-        self.setLayout(mainLayout)
 
+        self.setLayout(mainLayout)
         self.setWindowTitle("Editor")
 
     def writeInstanceValues(self):
@@ -77,17 +79,13 @@ class Dialog(QDialog):
 
         self.widgets = []
         for attrname in instance.__dict__:
-            input_widget = getInputWidgetForAttr(instance, attrname)
+            if (self.spec is not None) and (attrname not in self.spec):
+                continue
+
+            input_widget = getInputWidgetForAttr(instance, attrname, self.spec)
+
             input_widget.setWidgetValue(instance.__dict__[attrname])
             layout.addRow(*input_widget.rowItems())
             self.widgets.append(input_widget)
 
         self.formGroupBox.setLayout(layout)
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ins = TestClass()
-    dialog = Dialog(ins)
-    dialog.exec_()
-
-    print("intval=%d, floatval=%.2f, strval=%s, boolval=%s" % (ins.intval, ins.floatval, ins.strval, ins.boolval))
