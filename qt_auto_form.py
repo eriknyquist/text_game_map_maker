@@ -10,9 +10,10 @@ _input_decoders = {
 }
 
 class InputWidget(object):
-    def __init__(self, instance, attr, value_getter, value_setter, widget_getter):
+    def __init__(self, instance, attr, typename, value_getter, value_setter, widget_getter):
         self.instance = instance
         self.attr = attr
+        self.typename = typename
         self.value_getter = value_getter
         self.value_setter = value_setter
         self.widget = widget_getter()
@@ -20,11 +21,13 @@ class InputWidget(object):
 
     def setInstanceValue(self):
         value = self.value_getter(self.widget)
-        setattr(self.instance, self.attr, value)
+        typeobj = eval(self.typename)
+        setattr(self.instance, self.attr, typeobj(value))
 
     def setWidgetValue(self, value):
         value = getattr(self.instance, self.attr)
-        self.value_setter(self.widget, value)
+        typeobj = eval(self.typename)
+        self.value_setter(self.widget, typeobj(value))
 
     def rowItems(self):
         return self.label, self.widget
@@ -38,7 +41,7 @@ def getInputWidgetForAttr(instance, attrname, spec):
         typename = spec[attrname]
 
     value_getter, value_setter, widget_getter = _input_decoders[typename]
-    return InputWidget(instance, attrname, value_getter, value_setter, widget_getter)
+    return InputWidget(instance, attrname, typename, value_getter, value_setter, widget_getter)
 
 class QtAutoForm(QDialog):
     NumGridRows = 3
