@@ -9,32 +9,14 @@ from qt_auto_form import QtAutoForm
 
 _tiles = {}
 
-class IndicSelectWindow(QtWidgets.QDialog):
+class MapEditorWindow(QtWidgets.QDialog):
     def __init__(self, parent=None):
-        super(IndicSelectWindow, self).__init__(parent=parent)
+        super(MapEditorWindow, self).__init__(parent=parent)
         self.resize(500, 400)
         self.mainLayout = QtWidgets.QVBoxLayout(self)
         self.gridAreaLayout = QtWidgets.QHBoxLayout()
         self.buttonAreaLayout = QtWidgets.QHBoxLayout()
-
-        # Build row of buttons
-        self.doorButton = QtWidgets.QPushButton()
-        self.keypadDoorButton = QtWidgets.QPushButton()
-        self.saveButton = QtWidgets.QPushButton()
-        self.loadButton = QtWidgets.QPushButton()
-
-        self.doorButton.setText("Add door")
-        self.keypadDoorButton.setText("Add door with keypad")
-        self.saveButton.setText("Save to file")
-        self.loadButton.setText("Load from file")
-
-        self.doorButton.setEnabled(False)
-        self.keypadDoorButton.setEnabled(False)
-
-        self.buttonAreaLayout.addWidget(self.doorButton)
-        self.buttonAreaLayout.addWidget(self.keypadDoorButton)
-        self.buttonAreaLayout.addWidget(self.saveButton)
-        self.buttonAreaLayout.addWidget(self.loadButton)
+        self.buildToolbar()
 
         # Build scrollable grid area
         self.scrollArea = QtWidgets.QScrollArea(self)
@@ -56,6 +38,74 @@ class IndicSelectWindow(QtWidgets.QDialog):
                 btn.setFixedSize(100, 100)
                 btn.installEventFilter(self)
                 self.gridLayout.addWidget(btn, i, j)
+
+    def buildToolbar(self):
+        self.doorButton = QtWidgets.QPushButton()
+        self.keypadDoorButton = QtWidgets.QPushButton()
+        self.saveButton = QtWidgets.QPushButton()
+        self.loadButton = QtWidgets.QPushButton()
+        self.exportButton = QtWidgets.QPushButton()
+
+        self.doorButton.setText("Add door")
+        self.keypadDoorButton.setText("Add door with keypad")
+        self.saveButton.setText("Save to file")
+        self.loadButton.setText("Load from file")
+        self.exportButton.setText("Export map")
+
+        self.doorButton.clicked.connect(self.doorButtonClicked)
+        self.keypadDoorButton.clicked.connect(self.keypadDoorButtonClicked)
+        self.saveButton.clicked.connect(self.saveButtonClicked)
+        self.loadButton.clicked.connect(self.loadButtonClicked)
+        self.exportButton.clicked.connect(self.exportButtonClicked)
+
+        self.startTileCheckBox = QtWidgets.QCheckBox()
+        self.startTileCheckBox.setStyleSheet("margin-left:50%; margin-right:50%;")
+        self.startTileCheckBox.setEnabled(False)
+        label = QtWidgets.QLabel("Start tile")
+        label.setAlignment(QtCore.Qt.AlignCenter)
+        checkBoxLayout = QtWidgets.QVBoxLayout()
+        checkBoxLayout.addWidget(label)
+        checkBoxLayout.addWidget(self.startTileCheckBox)
+        checkBoxLayout.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.doorButton.setEnabled(False)
+        self.keypadDoorButton.setEnabled(False)
+
+        tileButtonLayout = QtWidgets.QHBoxLayout()
+        tileButtonLayout.addWidget(self.doorButton)
+        tileButtonLayout.addWidget(self.keypadDoorButton)
+        tileButtonLayout.addLayout(checkBoxLayout)
+        tileButtonGroup = QtWidgets.QGroupBox("Edit selected tile")
+        tileButtonGroup.setLayout(tileButtonLayout)
+
+        self.buttonAreaLayout.addWidget(tileButtonGroup)
+        self.buttonAreaLayout.addWidget(self.saveButton)
+        self.buttonAreaLayout.addWidget(self.loadButton)
+
+    def doorButtonClicked(self):
+        pass
+
+    def keypadDoorButtonClicked(self):
+        pass
+
+    def saveButtonClicked(self):
+        filedialog = QtWidgets.QFileDialog
+        options = filedialog.Options()
+        options |= filedialog.DontUseNativeDialog
+        filename, _ = filedialog.getSaveFileName(self, "QFileDialog.getSaveFileName()",
+					         "", "All Files (*);;Text Files (*.txt)",
+                                                 options=options)
+
+    def loadButtonClicked(self):
+        filedialog = QtWidgets.QFileDialog
+       	options = filedialog.Options()
+        options |= filedialog.DontUseNativeDialog
+        filename, _ = filedialog.getOpenFileName(self, "QFileDialog.getOpenFileName()",
+					         "", "All Files (*);;Text Files (*.txt)",
+                                                 options=options)
+
+    def exportButtonClicked(self):
+        pass
 
     def getButtonPosition(self, button):
         idx = self.gridLayout.indexOf(button)
@@ -101,9 +151,9 @@ class IndicSelectWindow(QtWidgets.QDialog):
         if self.selectedPosition in _tiles:
             newstate = True
 
-        for btn in [self.doorButton, self.keypadDoorButton]:
-            if btn.isEnabled != newstate:
-                btn.setEnabled(newstate)
+        for obj in [self.doorButton, self.keypadDoorButton, self.startTileCheckBox]:
+            if obj.isEnabled != newstate:
+                obj.setEnabled(newstate)
 
     def onMiddleClick(self, button):
         pass
@@ -164,6 +214,7 @@ class IndicSelectWindow(QtWidgets.QDialog):
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    w = IndicSelectWindow()
+    w = MapEditorWindow()
     w.show()
     sys.exit(app.exec_())
+
