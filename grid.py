@@ -268,7 +268,7 @@ class MapEditorWindow(QtWidgets.QDialog):
             else:
                 _set_button_style(button, selected=False, start=False, filled=True)
 
-        self._redraw_doors(button, tileobj)
+            self._redraw_doors(button, tileobj)
 
         self.startTilePosition = tuple(attrs['positions'][start_tile.tile_id])
 
@@ -487,7 +487,15 @@ class MapEditorWindow(QtWidgets.QDialog):
                 continue
 
             setattr(tileobj, direction, adjacent_tileobj)
-            setattr(adjacent_tileobj, tile.reverse_direction(direction), tileobj)
+
+            reverse_direction = tile.reverse_direction(direction)
+            reverse_pointer = getattr(adjacent_tileobj, reverse_direction)
+
+            if reverse_pointer and reverse_pointer.is_door():
+                print("replacement tile connected")
+                reverse_pointer.replacement_tile = tileobj
+            else:
+                setattr(adjacent_tileobj, tile.reverse_direction(direction), tileobj)
 
     def onLeftClick(self, button):
         position = self.getButtonPosition(button)
@@ -499,13 +507,13 @@ class MapEditorWindow(QtWidgets.QDialog):
             return
 
         if position not in _tiles:
+            # Created a new tile
+            _tiles[position] = tileobj
             _set_button_style(button, selected=True, start=False, filled=True)
+            self._connect_surrounding_tiles(tileobj, position)
 
         button.setText(str(tileobj.tile_id))
-        _tiles[position] = tileobj
         self.setSelectedPosition(button)
-
-        self._connect_surrounding_tiles(tileobj, position)
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
