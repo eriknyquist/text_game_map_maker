@@ -9,6 +9,14 @@ from qt_auto_form import QtAutoForm
 
 _tiles = {}
 
+start_tile_colour = '#6bfa75'
+
+# Set checkbox state without triggering the stateChanged signal
+def _silent_checkbox_set(checkbox, value, handler):
+    checkbox.stateChanged.disconnect(handler)
+    checkbox.setChecked(value)
+    checkbox.stateChanged.connect(handler)
+
 class MapEditorWindow(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(MapEditorWindow, self).__init__(parent=parent)
@@ -31,10 +39,12 @@ class MapEditorWindow(QtWidgets.QDialog):
         self.mainLayout.addLayout(self.buttonAreaLayout)
         self.mainLayout.addLayout(self.gridAreaLayout)
         self.selectedPosition = None
+        self.startTilePosition = None
 
         for i in range(100):
             for j in range(100):
                 btn = QtWidgets.QPushButton()
+                btn.setAttribute(QtCore.Qt.WA_StyledBackground)
                 btn.setFixedSize(100, 100)
                 btn.installEventFilter(self)
                 self.gridLayout.addWidget(btn, i, j)
@@ -60,7 +70,10 @@ class MapEditorWindow(QtWidgets.QDialog):
 
         self.startTileCheckBox = QtWidgets.QCheckBox()
         self.startTileCheckBox.setStyleSheet("margin-left:50%; margin-right:50%;")
+        self.startTileCheckBox.setChecked(False)
         self.startTileCheckBox.setEnabled(False)
+        self.startTileCheckBox.stateChanged.connect(self.onStartTileSet)
+
         label = QtWidgets.QLabel("Start tile")
         label.setAlignment(QtCore.Qt.AlignCenter)
         checkBoxLayout = QtWidgets.QVBoxLayout()
@@ -81,6 +94,18 @@ class MapEditorWindow(QtWidgets.QDialog):
         self.buttonAreaLayout.addWidget(tileButtonGroup)
         self.buttonAreaLayout.addWidget(self.saveButton)
         self.buttonAreaLayout.addWidget(self.loadButton)
+
+    def onStartTileSet(self, state):
+        if state == QtCore.Qt.Checked:
+            if self.startTilePosition is not None:
+                # Set current start tile colour back to default
+                old_start = self.gridLayout.itemAtPosition(*self.startTilePosition).widget()
+                old_start.setStyleSheet('background-color: None')
+
+            new_start = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
+            new_start.setStyleSheet('background-color: %s' % start_tile_colour)
+            self.startTilePosition = self.selectedPosition
+            self.startTileCheckBox.setEnabled(False)
 
     def doorButtonClicked(self):
         pass
@@ -151,7 +176,14 @@ class MapEditorWindow(QtWidgets.QDialog):
         if self.selectedPosition in _tiles:
             newstate = True
 
-        for obj in [self.doorButton, self.keypadDoorButton, self.startTileCheckBox]:
+        if self.selectedPosition == self.startTilePosition:
+            _silent_checkbox_set(self.startTileCheckBox, True, self.onStartTileSet)
+            self.startTileCheckBox.setEnabled(False)
+        else:
+            self.startTileCheckBox.setEnabled(True)
+            _silent_checkbox_set(self.startTileCheckBox, False, self.onStartTileSet)
+
+        for obj in [self.doorButton, self.keypadDoorButton]:
             if obj.isEnabled() != newstate:
                 obj.setEnabled(newstate)
 
@@ -163,7 +195,6 @@ class MapEditorWindow(QtWidgets.QDialog):
 
     def onLeftClick(self, button):
         position = self.getButtonPosition(button)
-        self.setSelectedPosition(button)
 
         if position in _tiles:
             tile = _tiles[position]
@@ -188,6 +219,7 @@ class MapEditorWindow(QtWidgets.QDialog):
 
         # Dialog was cancelled, we're done
         if not dialog.wasAccepted():
+            self.setSelectedPosition(button)
             return
 
         button.setText(str(tile.tile_id))
