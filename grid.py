@@ -1,7 +1,7 @@
 import sys
 import json
 
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 from text_game_maker.tile import tile
 from text_game_maker.game_objects.base import serialize, deserialize
@@ -14,6 +14,8 @@ _tiles = {}
 start_tile_colour = '#6bfa75'
 tile_border_colour = '#000000'
 selected_border_colour = '#ff0000'
+door_colour = QtCore.Qt.blue
+keypad_door_colour = QtCore.Qt.green
 
 button_style = "border:4px solid %s; background-color: None" % tile_border_colour
 start_button_style = "border:4px solid %s; background-color: %s" % (tile_border_colour, start_tile_colour)
@@ -37,6 +39,51 @@ def _silent_checkbox_set(checkbox, value, handler):
     checkbox.stateChanged.disconnect(handler)
     checkbox.setChecked(value)
     checkbox.stateChanged.connect(handler)
+
+class Button(QtWidgets.QPushButton):
+    def __init__(self, parent=None):
+        super(Button, self).__init__(parent)
+        self.doors = []
+        self.keypad_doors = []
+
+    def draw_doors(self, doors=[], keypad_doors=[]):
+        self.doors = doors
+        self.keypad_doors = keypad_doors
+        self.update()
+
+    def paintEvent(self, event):
+        super(Button, self).paintEvent(event)
+
+        for direction in self.doors:
+            self.draw_door(door_colour, direction)
+
+        for direction in self.keypad_doors:
+            self.draw_door(keypad_door_colour, direction)
+
+    def draw_door(self, colour, direction):
+        width = self.frameGeometry().width()
+        height = self.frameGeometry().height()
+
+        qwidth = width / 4
+        qheight = height / 4
+
+        if direction == "north":
+            points = (qheight, 0, height - qheight, 0)
+        elif direction == "south":
+            points = (qheight, width, height - qheight, width)
+        if direction == "east":
+            points = (height, qwidth, height, width - qwidth)
+        if direction == "west":
+            points = (0, qwidth, 0, width - qwidth)
+
+        self.draw_line(colour, *points)
+
+    def draw_line(self, colour, x1, y1, x2, y2):
+        painter = QtGui.QPainter(self)
+        painter.setPen(QtGui.QPen(colour, self.frameGeometry().width() / 8))
+        brush = QtGui.QBrush()
+        painter.setBrush(brush)
+        painter.drawLine(QtCore.QLine(x1, y1, x2, y2))
 
 class DoorSettings(object):
     spec = {
@@ -99,7 +146,7 @@ class MapEditorWindow(QtWidgets.QDialog):
 
         for i in range(self.rows):
             for j in range(self.columns):
-                btn = QtWidgets.QPushButton()
+                btn = Button()
                 btn.setAttribute(QtCore.Qt.WA_StyledBackground)
                 btn.setFixedSize(100, 100)
                 btn.installEventFilter(self)
