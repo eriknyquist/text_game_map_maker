@@ -10,6 +10,25 @@ from qt_auto_form import QtAutoForm
 _tiles = {}
 
 start_tile_colour = '#6bfa75'
+tile_border_colour = '#000000'
+selected_border_colour = '#ff0000'
+
+button_style = "border:4px solid %s; background-color: None" % tile_border_colour
+start_button_style = "border:4px solid %s; background-color: %s" % (tile_border_colour, start_tile_colour)
+
+def _set_button_style(button, selected=False, start=False, filled=True):
+    colour = "background-color: None"
+    border = ""
+
+    if selected:
+        border = "border:4px solid %s" % selected_border_colour
+    elif filled:
+        border = "border:4px solid %s" % tile_border_colour
+
+    if start:
+        colour = "background-color: %s" % start_tile_colour
+
+    button.setStyleSheet(';'.join([border, colour]))
 
 # Set checkbox state without triggering the stateChanged signal
 def _silent_checkbox_set(checkbox, value, handler):
@@ -100,10 +119,10 @@ class MapEditorWindow(QtWidgets.QDialog):
             if self.startTilePosition is not None:
                 # Set current start tile colour back to default
                 old_start = self.gridLayout.itemAtPosition(*self.startTilePosition).widget()
-                old_start.setStyleSheet('background-color: None')
+                _set_button_style(old_start, selected=False, start=False, filled=True)
 
             new_start = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
-            new_start.setStyleSheet('background-color: %s' % start_tile_colour)
+            _set_button_style(new_start, selected=True, start=True, filled=True)
             self.startTilePosition = self.selectedPosition
             self.startTileCheckBox.setEnabled(False)
 
@@ -170,11 +189,17 @@ class MapEditorWindow(QtWidgets.QDialog):
         return QtCore.QObject.event(obj, event)
 
     def setSelectedPosition(self, button):
-        self.selectedPosition = self.getButtonPosition(button)
-        newstate = False
+        if self.selectedPosition is not None:
+            oldstart = self.selectedPosition == self.startTilePosition
+            oldfilled = self.selectedPosition in _tiles
+            oldbutton = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
+            _set_button_style(oldbutton, selected=False, start=oldstart, filled=oldfilled)
 
-        if self.selectedPosition in _tiles:
-            newstate = True
+        self.selectedPosition = self.getButtonPosition(button)
+
+        newstart = self.selectedPosition == self.startTilePosition
+        newfilled = self.selectedPosition in _tiles
+        _set_button_style(button, selected=True, start=newstart, filled=newfilled)
 
         if self.selectedPosition == self.startTilePosition:
             _silent_checkbox_set(self.startTileCheckBox, True, self.onStartTileSet)
@@ -183,9 +208,16 @@ class MapEditorWindow(QtWidgets.QDialog):
             self.startTileCheckBox.setEnabled(True)
             _silent_checkbox_set(self.startTileCheckBox, False, self.onStartTileSet)
 
+        filled = self.selectedPosition in _tiles
+
+        if not filled:
+            _silent_checkbox_set(self.startTileCheckBox, False, self.onStartTileSet)
+            self.startTileCheckBox.setEnabled(False)
+
+
         for obj in [self.doorButton, self.keypadDoorButton]:
-            if obj.isEnabled() != newstate:
-                obj.setEnabled(newstate)
+            if obj.isEnabled() != filled:
+                obj.setEnabled(filled)
 
     def onMiddleClick(self, button):
         pass
@@ -221,6 +253,9 @@ class MapEditorWindow(QtWidgets.QDialog):
         if not dialog.wasAccepted():
             self.setSelectedPosition(button)
             return
+
+        if position not in _tiles:
+            _set_button_style(button, selected=True, start=False, filled=True)
 
         button.setText(str(tile.tile_id))
         _tiles[position] = tile
