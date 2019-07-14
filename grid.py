@@ -38,6 +38,38 @@ def _silent_checkbox_set(checkbox, value, handler):
     checkbox.setChecked(value)
     checkbox.stateChanged.connect(handler)
 
+class DoorSettings(object):
+    spec = {
+        "direction": {"type": "choice", "choices": ["north", "south", "east", "west"]},
+        "prefix": {"type": "str"},
+        "name": {"type": "str"},
+        "tile_id": {"type": "str", "label": "tile ID"}
+    }
+
+    def __init__(self):
+        self.prefix = ""
+        self.name = ""
+        self.direction = ""
+        self.tile_id = ""
+
+class KeypadDoorSettings(object):
+    spec = {
+        "direction": {"type": "choice", "choices": ["north", "south", "east", "west"]},
+        "prefix": {"type": "str"},
+        "name": {"type": "str"},
+        "tile_id": {"type": "str", "label": "tile ID"},
+        "code": {"type": "int", "label": "keypad code"},
+        "prompt": {"type": "str", "label": "keypad prompt"}
+    }
+
+    def __init__(self):
+        self.prefix = ""
+        self.name = ""
+        self.direction = ""
+        self.tile_id = ""
+        self.code = 0
+        self.prompt = ""
+
 class MapEditorWindow(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(MapEditorWindow, self).__init__(parent=parent)
@@ -171,10 +203,24 @@ class MapEditorWindow(QtWidgets.QDialog):
             self.startTileCheckBox.setEnabled(False)
 
     def doorButtonClicked(self):
-        pass
+        settings = DoorSettings()
+        dialog = QtAutoForm(settings, title="Door settings", spec=settings.spec)
+        dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+        dialog.exec_()
+
+        # Dialog was cancelled, we're done
+        if not dialog.wasAccepted():
+            return
 
     def keypadDoorButtonClicked(self):
-        pass
+        settings = KeypadDoorSettings()
+        dialog = QtAutoForm(settings, title="Keypad door settings", spec=settings.spec)
+        dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+        dialog.exec_()
+
+        # Dialog was cancelled, we're done
+        if not dialog.wasAccepted():
+            return
 
     def saveButtonClicked(self):
         filedialog = QtWidgets.QFileDialog
@@ -285,7 +331,7 @@ class MapEditorWindow(QtWidgets.QDialog):
         else:
             tileobj = tile.Tile()
 
-        spec = {
+        tilespec = {
             'description': {'type':'str'},
             'name': {'type': 'str'},
             'tile_id': {'type': 'str', 'label': 'tile ID'},
@@ -297,7 +343,7 @@ class MapEditorWindow(QtWidgets.QDialog):
             'ground_taste_description': {'type': 'str', 'label': 'ground taste description'}
         }
 
-        dialog = QtAutoForm(tileobj, spec)
+        dialog = QtAutoForm(tileobj, title="Tile attributes", spec=tilespec)
         dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         dialog.exec_()
 

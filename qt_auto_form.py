@@ -1,12 +1,25 @@
-from PyQt5.QtWidgets import (QDialog, QDialogButtonBox,
+from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QComboBox,
     QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
     QSpinBox, QDoubleSpinBox, QTextEdit, QVBoxLayout, QCheckBox, QSizePolicy)
 
+def _spin_box():
+    w = QSpinBox()
+    w.setMaximum((2 ** 31) - 1)
+    w.setMinimum(-(2 ** 31) + 1)
+    return w
+
+def _double_spin_box():
+    w = QDoubleSpinBox()
+    w.setMaximum(float(2 ** 31) - 1.0)
+    w.setMinimum(float(-(2 ** 31)) + 1.0)
+    return w
+
 _input_decoders = {
     'str': (lambda x: x.text(), lambda x, y: x.setText(y), lambda: QLineEdit()),
-    'int': (lambda x: x.value(), lambda x, y: x.setValue(y), lambda: QSpinBox()),
-    'float': (lambda x: x.value(), lambda x, y: x.setValue(y), lambda: QDoubleSpinBox()),
-    'bool': (lambda x: x.isChecked(), lambda x, y: x.setChecked(y), lambda: QCheckBox())
+    'int': (lambda x: x.value(), lambda x, y: x.setValue(y), _spin_box),
+    'float': (lambda x: x.value(), lambda x, y: x.setValue(y), _double_spin_box),
+    'bool': (lambda x: x.isChecked(), lambda x, y: x.setChecked(y), lambda: QCheckBox()),
+    'choice': (lambda x: x.currentText(), lambda x, y: None, lambda: QComboBox())
 }
 
 class InputWidget(object):
@@ -26,6 +39,9 @@ class InputWidget(object):
         setattr(self.instance, self.attr, typeobj(value))
 
     def setWidgetValue(self, value):
+        if self.typename == "choice":
+            return
+
         value = getattr(self.instance, self.attr)
         typeobj = eval(self.typename)
         self.value_setter(self.widget, typeobj(value))
@@ -36,6 +52,7 @@ class InputWidget(object):
 def getInputWidgetForAttr(instance, attrname, spec):
     typename = 'str'
     label = attrname
+    attrs = {}
 
     if (spec is None) or (attrname not in spec):
         attrtype = type(getattr(instance, attrname)).__name__
@@ -50,14 +67,20 @@ def getInputWidgetForAttr(instance, attrname, spec):
 
     value_getter, value_setter, widget_getter = _input_decoders[typename]
 
-    return InputWidget(instance, attrname, typename, value_getter, value_setter,
-                       widget_getter, label)
+    widget = InputWidget(instance, attrname, typename, value_getter, value_setter,
+                         widget_getter, label)
+
+    if widget.typename == "choice":
+        if "choices" in attrs:
+            widget.widget.addItems(attrs["choices"])
+
+    return widget
 
 class QtAutoForm(QDialog):
     NumGridRows = 3
     NumButtons = 4
 
-    def __init__(self, instance, spec=None):
+    def __init__(self, instance, title=None, spec=None):
         super(QtAutoForm, self).__init__()
 
         self.spec = spec
@@ -74,7 +97,7 @@ class QtAutoForm(QDialog):
         mainLayout.addWidget(buttonBox)
 
         self.setLayout(mainLayout)
-        self.setWindowTitle("Editor")
+        self.setWindowTitle("Editor" if title is None else title)
         self.accepted = False
 
     def writeInstanceValues(self):
