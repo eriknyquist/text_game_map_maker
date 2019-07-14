@@ -152,7 +152,7 @@ class MapEditorWindow(QtWidgets.QDialog):
             newstate = True
 
         for obj in [self.doorButton, self.keypadDoorButton, self.startTileCheckBox]:
-            if obj.isEnabled != newstate:
+            if obj.isEnabled() != newstate:
                 obj.setEnabled(newstate)
 
     def onMiddleClick(self, button):
@@ -171,15 +171,15 @@ class MapEditorWindow(QtWidgets.QDialog):
             tile = Tile()
 
         spec = {
-            'description': 'str',
-            'name': 'str',
-            'tile_id': 'str',
-            'first_visit_message': 'str',
-            'first_visit_message_in_dark': 'bool',
+            'description': {'type':'str'},
+            'name': {'type': 'str'},
+            'tile_id': {'type': 'str', 'label': 'tile ID'},
+            'first_visit_message': {'type': 'str', 'label': 'first visit message'},
+            'first_visit_message_in_dark': {'type': 'bool', 'label': 'show first visit message if dark'},
             'dark': 'bool',
-            'smell_description': 'str',
-            'ground_smell_description': 'str',
-            'ground_taste_description': 'str'
+            'smell_description': {'type': 'str', 'label': 'smell description'},
+            'ground_smell_description': {'type': 'str', 'label': 'ground smell description'},
+            'ground_taste_description': {'type': 'str', 'label': 'ground taste description'}
         }
 
         dialog = QtAutoForm(tile, spec)

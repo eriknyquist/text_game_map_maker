@@ -10,14 +10,15 @@ _input_decoders = {
 }
 
 class InputWidget(object):
-    def __init__(self, instance, attr, typename, value_getter, value_setter, widget_getter):
+    def __init__(self, instance, attr, typename, value_getter, value_setter,
+                 widget_getter, label):
         self.instance = instance
         self.attr = attr
         self.typename = typename
         self.value_getter = value_getter
         self.value_setter = value_setter
         self.widget = widget_getter()
-        self.label = QLabel("%s:" % self.attr)
+        self.label = QLabel("%s:" % label)
 
     def setInstanceValue(self):
         value = self.value_getter(self.widget)
@@ -33,15 +34,24 @@ class InputWidget(object):
         return self.label, self.widget
 
 def getInputWidgetForAttr(instance, attrname, spec):
+    typename = 'str'
+    label = attrname
+
     if (spec is None) or (attrname not in spec):
-        typename = type(getattr(instance, attrname)).__name__
-        if typename not in _input_decoders:
-            typename = 'str'
+        attrtype = type(getattr(instance, attrname)).__name__
+        if attrtype in _input_decoders:
+            typename = attrtype
     else:
-        typename = spec[attrname]
+        attrs = spec[attrname]
+        if "type" in attrs:
+            typename = attrs["type"]
+        if "label" in attrs:
+            label = attrs["label"]
 
     value_getter, value_setter, widget_getter = _input_decoders[typename]
-    return InputWidget(instance, attrname, typename, value_getter, value_setter, widget_getter)
+
+    return InputWidget(instance, attrname, typename, value_getter, value_setter,
+                       widget_getter, label)
 
 class QtAutoForm(QDialog):
     NumGridRows = 3
@@ -49,11 +59,6 @@ class QtAutoForm(QDialog):
 
     def __init__(self, instance, spec=None):
         super(QtAutoForm, self).__init__()
-
-        if spec is not None:
-            for typename in spec.values():
-                if typename not in _input_decoders:
-                    raise ValueError("unknown type in spec: %s" % typename)
 
         self.spec = spec
         self.widgets = []
