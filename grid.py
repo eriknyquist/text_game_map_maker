@@ -268,7 +268,7 @@ class MapEditorWindow(QtWidgets.QDialog):
             else:
                 _set_button_style(button, selected=False, start=False, filled=True)
 
-            self._redraw_doors(button, tileobj)
+            self.redrawDoors(button, tileobj)
 
         self.startTilePosition = tuple(attrs['positions'][start_tile.tile_id])
 
@@ -284,36 +284,87 @@ class MapEditorWindow(QtWidgets.QDialog):
             self.startTilePosition = self.selectedPosition
             self.startTileCheckBox.setEnabled(False)
 
-    def _tile_id_exists(self, tile_id):
+    def tileIDExists(self, tile_id):
         val = tile.get_tile_by_id(tile_id)
         return val is not None
 
-    def doorButtonClicked(self):
-        settings = DoorSettings()
-        dialog = QtAutoForm(settings, title="Door settings", spec=settings.spec)
+    def getDoorSettings(self, settings_obj, window_title):
+        dialog = QtAutoForm(settings_obj, title=window_title, spec=settings_obj.spec)
         dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         dialog.exec_()
 
         # Dialog was cancelled, we're done
         if not dialog.wasAccepted():
-            return
+            return False
 
-        if self._tile_id_exists(settings.tile_id):
+        if self.tileIDExists(settings_obj.tile_id):
             self.errorDialog("Unable to create door",
-                             "Tile ID '%s' is already is use!" % settings.tile_id)
+                             "Tile ID '%s' is already is use!" % settings_obj.tile_id)
+            return False
+
+        return True
+
+    def oppositeDoorExists(self, opposite_tile, direction):
+        if not opposite_tile:
+            return False
+
+        opposite_dir = tile.reverse_direction(direction)
+        opposite = getattr(opposite_tile, opposite_dir)
+        return opposite and opposite.is_door()
+
+    def doorButtonClicked(self):
+        settings = DoorSettings()
+        wasAccepted = self.getDoorSettings(settings, "Door settings")
+        if not wasAccepted:
             return
 
         tileobj = _tiles[self.selectedPosition]
         button = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
 
         replace = getattr(tileobj, settings.direction)
+
+        # Check if there's already a door in this direction on the adjacent tile
+        if self.oppositeDoorExists(replace, settings.direction):
+            self.errorDialog("Unable to add door", "There is an existing door "
+                             " locked from the opposite direction (tile ID '%s')"
+                             % replace.tile_id)
+            return
+
         door = tile.LockedDoor(settings.prefix, settings.name, tileobj, replace)
         door.set_tile_id(settings.tile_id)
         setattr(tileobj, settings.direction, door)
 
         button.add_doors(doors=[settings.direction])
 
-    def _redraw_doors(self, button, tileobj):
+    def keypadDoorButtonClicked(self):
+        settings = KeypadDoorSettings()
+        wasAccepted = self.getDoorSettings(settings, "Keypad door settings")
+        if not wasAccepted:
+            return
+
+        tileobj = _tiles[self.selectedPosition]
+        button = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
+
+        replace = getattr(tileobj, settings.direction)
+
+        # Check if there's already a door in this direction on the adjacent tile
+        if self.oppositeDoorExists(replace, settings.direction):
+            self.errorDialog("Unable to add door", "There is an existing door "
+                             " locked from the opposite direction (tile ID '%s')"
+                             % replace.tile_id)
+            return
+
+        door = tile.LockedDoorWithKeypad(settings.code, prefix=settings.prefix,
+                                         name=settings.name, src_tile=tileobj,
+                                         replacement_tile=replace)
+
+        door.set_tile_id(settings.tile_id)
+        door.set_prompt(settings.prompt)
+        setattr(tileobj, settings.direction, door)
+
+        button.add_doors(keypad_doors=[settings.direction])
+
+    def redrawDoors(self, button, tileobj):
         doors = []
         keypad_doors = []
 
@@ -327,16 +378,6 @@ class MapEditorWindow(QtWidgets.QDialog):
         button.doors = []
         button.keypad_doors = []
         button.add_doors(doors, keypad_doors)
-
-    def keypadDoorButtonClicked(self):
-        settings = KeypadDoorSettings()
-        dialog = QtAutoForm(settings, title="Keypad door settings", spec=settings.spec)
-        dialog.setWindowModality(QtCore.Qt.ApplicationModal)
-        dialog.exec_()
-
-        # Dialog was cancelled, we're done
-        if not dialog.wasAccepted():
-            return
 
     def saveButtonClicked(self):
         if self.startTilePosition is None:
@@ -443,30 +484,41 @@ class MapEditorWindow(QtWidgets.QDialog):
     def onRightClick(self, button):
         self.setSelectedPosition(button)
 
-    def _run_tile_builder_dialog(self, position):
+    def runTileBuilderDialog(self, position):
         settings = TileSettings()
-        settings.tile_id = tile.Tile.tile_id
+
+        if position in _tiles:
+            tileobj = _tiles[position]
+            settings.description = tileobj.description
+            settings.name = tileobj.name
+            settings.tile_id = tileobj.tile_id
+            settings.first_visit_message = tileobj.first_visit_message
+            settings.first_visit_message_in_dark = tileobj.first_visit_message_in_dark
+            settings.dark = tileobj.dark
+            settings.smell_description = tileobj.smell_description
+            settings.ground_smell_description = tileobj.ground_smell_description
+            settings.ground_taste_description = tileobj.ground_taste_description
+        else:
+            tileobj = tile.Tile()
+            settings.tile_id = tile.Tile.tile_id
 
         dialog = QtAutoForm(settings, title="Tile attributes", spec=settings.spec)
         dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         dialog.exec_()
 
-        if self._tile_id_exists(settings.tile_id):
-            self.errorDialog("Unable to create tile", "Tile ID '%s' already in use!"
-                             % settings.tile_id)
-            return None
-
         if not dialog.wasAccepted():
             return None
 
-        if position in _tiles:
-            tileobj = _tiles[position]
-        else:
-            tileobj = tile.Tile()
+        if (tileobj.tile_id != settings.tile_id):
+            if self.tileIDExists(settings.tile_id):
+                self.errorDialog("Unable to create tile", "Tile ID '%s' already in use!"
+                                 % settings.tile_id)
+                return None
+
+            tileobj.set_tile_id(settings.tile_id)
 
         tileobj.description = settings.description
         tileobj.name = settings.name
-        tileobj.set_tile_id(settings.tile_id)
         tileobj.first_visit_message = settings.first_visit_message
         tileobj.first_visit_message_in_dark = settings.first_visit_message_in_dark
         tileobj.dark = settings.dark
@@ -476,7 +528,7 @@ class MapEditorWindow(QtWidgets.QDialog):
 
         return tileobj
 
-    def _connect_surrounding_tiles(self, tileobj, position):
+    def connectSurroundingTiles(self, tileobj, position):
         north, south, east, west = self.surroundingTiles(position)
         adjacent_tiles = {'north': north, 'south': south, 'east': east, 'west': west}
 
@@ -499,7 +551,7 @@ class MapEditorWindow(QtWidgets.QDialog):
 
     def onLeftClick(self, button):
         position = self.getButtonPosition(button)
-        tileobj = self._run_tile_builder_dialog(position)
+        tileobj = self.runTileBuilderDialog(position)
 
         # Dialog was cancelled or otherwise failed, we're done
         if tileobj is None:
@@ -510,7 +562,7 @@ class MapEditorWindow(QtWidgets.QDialog):
             # Created a new tile
             _tiles[position] = tileobj
             _set_button_style(button, selected=True, start=False, filled=True)
-            self._connect_surrounding_tiles(tileobj, position)
+            self.connectSurroundingTiles(tileobj, position)
 
         button.setText(str(tileobj.tile_id))
         self.setSelectedPosition(button)
