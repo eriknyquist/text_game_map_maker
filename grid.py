@@ -46,9 +46,9 @@ class Button(QtWidgets.QPushButton):
         self.doors = []
         self.keypad_doors = []
 
-    def draw_doors(self, doors=[], keypad_doors=[]):
-        self.doors = doors
-        self.keypad_doors = keypad_doors
+    def add_doors(self, doors=[], keypad_doors=[]):
+        self.doors.extend(doors)
+        self.keypad_doors.extend(keypad_doors)
         self.update()
 
     def paintEvent(self, event):
@@ -116,6 +116,30 @@ class KeypadDoorSettings(object):
         self.tile_id = ""
         self.code = 0
         self.prompt = ""
+
+class TileSettings(object):
+    spec = {
+        'description': {'type':'str'},
+        'name': {'type': 'str'},
+        'tile_id': {'type': 'str', 'label': 'tile ID'},
+        'first_visit_message': {'type': 'str', 'label': 'first visit message'},
+        'first_visit_message_in_dark': {'type': 'bool', 'label': 'show first visit message if dark'},
+        'dark': 'bool',
+        'smell_description': {'type': 'str', 'label': 'smell description'},
+        'ground_smell_description': {'type': 'str', 'label': 'ground smell description'},
+        'ground_taste_description': {'type': 'str', 'label': 'ground taste description'}
+    }
+
+    def __init__(self):
+        self.description = ""
+        self.name = ""
+        self.tile_id = ""
+        self.first_visit_message = ""
+        self.first_visit_message_in_dark = True
+        self.dark = False
+        self.smell_description = ""
+        self.ground_smell_description = ""
+        self.ground_taste_description = ""
 
 class MapEditorWindow(QtWidgets.QDialog):
     def __init__(self, parent=None):
@@ -204,6 +228,15 @@ class MapEditorWindow(QtWidgets.QDialog):
             button.setText("")
             _set_button_style(button, selected=False, start=False, filled=False)
 
+    def errorDialog(self, heading="Error", message="Unrecoverable error occurred"):
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Critical)
+        msg.setText(heading)
+        msg.setInformativeText(message)
+        msg.setWindowTitle("Critical error!")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg.exec_()
+
     def serialize(self):
         attrs = {}
         start_tile = _tiles[self.startTilePosition]
@@ -235,6 +268,8 @@ class MapEditorWindow(QtWidgets.QDialog):
             else:
                 _set_button_style(button, selected=False, start=False, filled=True)
 
+        self._redraw_doors(button, tileobj)
+
         self.startTilePosition = tuple(attrs['positions'][start_tile.tile_id])
 
     def onStartTileSet(self, state):
@@ -249,6 +284,10 @@ class MapEditorWindow(QtWidgets.QDialog):
             self.startTilePosition = self.selectedPosition
             self.startTileCheckBox.setEnabled(False)
 
+    def _tile_id_exists(self, tile_id):
+        val = tile.get_tile_by_id(tile_id)
+        return val is not None
+
     def doorButtonClicked(self):
         settings = DoorSettings()
         dialog = QtAutoForm(settings, title="Door settings", spec=settings.spec)
@@ -258,6 +297,36 @@ class MapEditorWindow(QtWidgets.QDialog):
         # Dialog was cancelled, we're done
         if not dialog.wasAccepted():
             return
+
+        if self._tile_id_exists(settings.tile_id):
+            self.errorDialog("Unable to create door",
+                             "Tile ID '%s' is already is use!" % settings.tile_id)
+            return
+
+        tileobj = _tiles[self.selectedPosition]
+        button = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
+
+        replace = getattr(tileobj, settings.direction)
+        door = tile.LockedDoor(settings.prefix, settings.name, tileobj, replace)
+        door.set_tile_id(settings.tile_id)
+        setattr(tileobj, settings.direction, door)
+
+        button.add_doors(doors=[settings.direction])
+
+    def _redraw_doors(self, button, tileobj):
+        doors = []
+        keypad_doors = []
+
+        for direction in ['north', 'south', 'east', 'west']:
+            attr = getattr(tileobj, direction)
+            if type(attr) is tile.LockedDoor:
+                doors.append(direction)
+            elif type(attr) == tile.LockedDoorWithKeypad:
+                keypad_doors.append(direction)
+
+        button.doors = []
+        button.keypad_doors = []
+        button.add_doors(doors, keypad_doors)
 
     def keypadDoorButtonClicked(self):
         settings = KeypadDoorSettings()
@@ -270,6 +339,11 @@ class MapEditorWindow(QtWidgets.QDialog):
             return
 
     def saveButtonClicked(self):
+        if self.startTilePosition is None:
+            self.errorDialog("Unable to save map", "No start tile is set. You "
+                             "must set a start tile before saving.")
+            return
+
         filedialog = QtWidgets.QFileDialog
         options = filedialog.Options()
         options |= filedialog.DontUseNativeDialog
@@ -359,7 +433,6 @@ class MapEditorWindow(QtWidgets.QDialog):
             _silent_checkbox_set(self.startTileCheckBox, False, self.onStartTileSet)
             self.startTileCheckBox.setEnabled(False)
 
-
         for obj in [self.doorButton, self.keypadDoorButton]:
             if obj.isEnabled() != filled:
                 obj.setEnabled(filled)
@@ -370,32 +443,58 @@ class MapEditorWindow(QtWidgets.QDialog):
     def onRightClick(self, button):
         self.setSelectedPosition(button)
 
-    def onLeftClick(self, button):
-        position = self.getButtonPosition(button)
+    def _run_tile_builder_dialog(self, position):
+        settings = TileSettings()
+        settings.tile_id = tile.Tile.tile_id
+
+        dialog = QtAutoForm(settings, title="Tile attributes", spec=settings.spec)
+        dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+        dialog.exec_()
+
+        if self._tile_id_exists(settings.tile_id):
+            self.errorDialog("Unable to create tile", "Tile ID '%s' already in use!"
+                             % settings.tile_id)
+            return None
+
+        if not dialog.wasAccepted():
+            return None
 
         if position in _tiles:
             tileobj = _tiles[position]
         else:
             tileobj = tile.Tile()
 
-        tilespec = {
-            'description': {'type':'str'},
-            'name': {'type': 'str'},
-            'tile_id': {'type': 'str', 'label': 'tile ID'},
-            'first_visit_message': {'type': 'str', 'label': 'first visit message'},
-            'first_visit_message_in_dark': {'type': 'bool', 'label': 'show first visit message if dark'},
-            'dark': 'bool',
-            'smell_description': {'type': 'str', 'label': 'smell description'},
-            'ground_smell_description': {'type': 'str', 'label': 'ground smell description'},
-            'ground_taste_description': {'type': 'str', 'label': 'ground taste description'}
-        }
+        tileobj.description = settings.description
+        tileobj.name = settings.name
+        tileobj.set_tile_id(settings.tile_id)
+        tileobj.first_visit_message = settings.first_visit_message
+        tileobj.first_visit_message_in_dark = settings.first_visit_message_in_dark
+        tileobj.dark = settings.dark
+        tileobj.smell_description = settings.smell_description
+        tileobj.ground_smell_description = settings.ground_smell_description
+        tileobj.ground_taste_description = settings.ground_taste_description
 
-        dialog = QtAutoForm(tileobj, title="Tile attributes", spec=tilespec)
-        dialog.setWindowModality(QtCore.Qt.ApplicationModal)
-        dialog.exec_()
+        return tileobj
 
-        # Dialog was cancelled, we're done
-        if not dialog.wasAccepted():
+    def _connect_surrounding_tiles(self, tileobj, position):
+        north, south, east, west = self.surroundingTiles(position)
+        adjacent_tiles = {'north': north, 'south': south, 'east': east, 'west': west}
+
+        for direction in adjacent_tiles:
+            adjacent_tileobj = adjacent_tiles[direction]
+
+            if not adjacent_tileobj:
+                continue
+
+            setattr(tileobj, direction, adjacent_tileobj)
+            setattr(adjacent_tileobj, tile.reverse_direction(direction), tileobj)
+
+    def onLeftClick(self, button):
+        position = self.getButtonPosition(button)
+        tileobj = self._run_tile_builder_dialog(position)
+
+        # Dialog was cancelled or otherwise failed, we're done
+        if tileobj is None:
             self.setSelectedPosition(button)
             return
 
@@ -406,23 +505,7 @@ class MapEditorWindow(QtWidgets.QDialog):
         _tiles[position] = tileobj
         self.setSelectedPosition(button)
 
-        # Connect tile to surrounding tiles
-        north, south, east, west = self.surroundingTiles(position)
-        if north:
-            tileobj.north = north
-            north.south = tileobj
-
-        if south:
-            tileobj.south = south
-            south.north = tileobj
-
-        if east:
-            tileobj.east = east
-            east.west = tileobj
-
-        if west:
-            tileobj.west = west
-            west.east = tileobj
+        self._connect_surrounding_tiles(tileobj, position)
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

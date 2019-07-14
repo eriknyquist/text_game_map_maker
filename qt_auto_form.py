@@ -35,16 +35,30 @@ class InputWidget(object):
 
     def setInstanceValue(self):
         value = self.value_getter(self.widget)
-        typeobj = eval(self.typename)
-        setattr(self.instance, self.attr, typeobj(value))
+
+        try:
+            cast_value = eval(self.typename)(value)
+        except Exception:
+            value = str(value)
+        else:
+            value = cast_value
+
+        setattr(self.instance, self.attr, value)
 
     def setWidgetValue(self, value):
         if self.typename == "choice":
             return
 
         value = getattr(self.instance, self.attr)
-        typeobj = eval(self.typename)
-        self.value_setter(self.widget, typeobj(value))
+
+        try:
+            cast_value = eval(self.typename)(value)
+        except Exception:
+            value = str(value)
+        else:
+            value = cast_value
+
+        self.value_setter(self.widget, value)
 
     def rowItems(self):
         return self.label, self.widget
