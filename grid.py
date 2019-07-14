@@ -177,18 +177,21 @@ class MapEditorWindow(QtWidgets.QDialog):
                 self.gridLayout.addWidget(btn, i, j)
 
     def buildToolbar(self):
+        self.deleteButton = QtWidgets.QPushButton()
         self.doorButton = QtWidgets.QPushButton()
         self.keypadDoorButton = QtWidgets.QPushButton()
         self.saveButton = QtWidgets.QPushButton()
         self.loadButton = QtWidgets.QPushButton()
         self.exportButton = QtWidgets.QPushButton()
 
+        self.deleteButton.setText("Delete tile")
         self.doorButton.setText("Add door")
         self.keypadDoorButton.setText("Add door with keypad")
         self.saveButton.setText("Save to file")
         self.loadButton.setText("Load from file")
         self.exportButton.setText("Export map")
 
+        self.deleteButton.clicked.connect(self.deleteButtonClicked)
         self.doorButton.clicked.connect(self.doorButtonClicked)
         self.keypadDoorButton.clicked.connect(self.keypadDoorButtonClicked)
         self.saveButton.clicked.connect(self.saveButtonClicked)
@@ -210,8 +213,10 @@ class MapEditorWindow(QtWidgets.QDialog):
 
         self.doorButton.setEnabled(False)
         self.keypadDoorButton.setEnabled(False)
+        self.deleteButton.setEnabled(False)
 
         tileButtonLayout = QtWidgets.QHBoxLayout()
+        tileButtonLayout.addWidget(self.deleteButton)
         tileButtonLayout.addWidget(self.doorButton)
         tileButtonLayout.addWidget(self.keypadDoorButton)
         tileButtonLayout.addLayout(checkBoxLayout)
@@ -227,6 +232,15 @@ class MapEditorWindow(QtWidgets.QDialog):
             button = self.gridLayout.itemAtPosition(*pos).widget()
             button.setText("")
             _set_button_style(button, selected=False, start=False, filled=False)
+
+    def yesNoDialog(self, header="", msg="Are you sure?"):
+        reply = QtWidgets.QMessageBox.question(self, header, msg,
+                                               (QtWidgets.QMessageBox.Yes |
+                                               QtWidgets.QMessageBox.No |
+                                               QtWidgets.QMessageBox.Cancel),
+                                               QtWidgets.QMessageBox.Cancel)
+
+        return reply == QtWidgets.QMessageBox.Yes
 
     def errorDialog(self, heading="Error", message="Unrecoverable error occurred"):
         msg = QtWidgets.QMessageBox()
@@ -312,6 +326,25 @@ class MapEditorWindow(QtWidgets.QDialog):
         opposite = getattr(opposite_tile, opposite_dir)
         return opposite and opposite.is_door()
 
+    def deleteButtonClicked(self):
+        if self.selectedPosition not in _tiles:
+            self.errorDialog("Unable to delete tile", "No tile in this space "
+                             "to delete")
+            return
+
+        tileobj = _tiles[self.selectedPosition]
+        button = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
+
+        reply = self.yesNoDialog("Are you sure?", "Are you sure you want to "
+                                "delete this tile (tile ID is '%s')" % (tileobj.tile_id))
+        if not reply:
+            return
+
+        self.disconnectSurroundingTiles(tileobj, self.selectedPosition)
+        del _tiles[self.selectedPosition]
+        button.setText("")
+        _set_button_style(button, selected=False, start=False, filled=False)
+
     def doorButtonClicked(self):
         settings = DoorSettings()
         wasAccepted = self.getDoorSettings(settings, "Door settings")
@@ -389,7 +422,7 @@ class MapEditorWindow(QtWidgets.QDialog):
         options = filedialog.Options()
         options |= filedialog.DontUseNativeDialog
         filename, _ = filedialog.getSaveFileName(self, "QFileDialog.getSaveFileName()",
-					         "", "All Files (*);;Text Files (*.txt)",
+                             "", "All Files (*);;Text Files (*.txt)",
                                                  options=options)
 
         with open(filename, 'w') as fh:
@@ -397,10 +430,10 @@ class MapEditorWindow(QtWidgets.QDialog):
 
     def loadButtonClicked(self):
         filedialog = QtWidgets.QFileDialog
-       	options = filedialog.Options()
+        options = filedialog.Options()
         options |= filedialog.DontUseNativeDialog
         filename, _ = filedialog.getOpenFileName(self, "QFileDialog.getOpenFileName()",
-					         "", "All Files (*);;Text Files (*.txt)",
+                             "", "All Files (*);;Text Files (*.txt)",
                                                  options=options)
 
         with open(filename, 'r') as fh:
@@ -474,7 +507,7 @@ class MapEditorWindow(QtWidgets.QDialog):
             _silent_checkbox_set(self.startTileCheckBox, False, self.onStartTileSet)
             self.startTileCheckBox.setEnabled(False)
 
-        for obj in [self.doorButton, self.keypadDoorButton]:
+        for obj in [self.doorButton, self.keypadDoorButton, self.deleteButton]:
             if obj.isEnabled() != filled:
                 obj.setEnabled(filled)
 
@@ -528,6 +561,26 @@ class MapEditorWindow(QtWidgets.QDialog):
 
         return tileobj
 
+    def disconnectSurroundingTiles(self, tileobj, position):
+        north, south, east, west = self.surroundingTiles(position)
+        adjacent_tiles = {'north': north, 'south': south, 'east': east, 'west': west}
+
+        for direction in adjacent_tiles:
+            adjacent_tileobj = adjacent_tiles[direction]
+
+            if not adjacent_tileobj:
+                continue
+
+            setattr(tileobj, direction, None)
+
+            reverse_direction = tile.reverse_direction(direction)
+            reverse_pointer = getattr(adjacent_tileobj, reverse_direction)
+
+            if reverse_pointer and reverse_pointer.is_door():
+                reverse_pointer.replacement_tile = None
+            else:
+                setattr(adjacent_tileobj, tile.reverse_direction(direction), None)
+
     def connectSurroundingTiles(self, tileobj, position):
         north, south, east, west = self.surroundingTiles(position)
         adjacent_tiles = {'north': north, 'south': south, 'east': east, 'west': west}
@@ -544,7 +597,6 @@ class MapEditorWindow(QtWidgets.QDialog):
             reverse_pointer = getattr(adjacent_tileobj, reverse_direction)
 
             if reverse_pointer and reverse_pointer.is_door():
-                print("replacement tile connected")
                 reverse_pointer.replacement_tile = tileobj
             else:
                 setattr(adjacent_tileobj, tile.reverse_direction(direction), tileobj)
