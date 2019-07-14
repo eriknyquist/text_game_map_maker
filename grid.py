@@ -1,7 +1,9 @@
 import sys
+import json
+
 from PyQt5 import QtWidgets, QtCore
 
-from text_game_maker.tile.tile import Tile
+from text_game_maker.tile import tile
 from text_game_maker.game_objects.base import serialize, deserialize
 from text_game_maker.game_objects import __object_model_version__ as obj_version
 
@@ -60,8 +62,11 @@ class MapEditorWindow(QtWidgets.QDialog):
         self.selectedPosition = None
         self.startTilePosition = None
 
-        for i in range(100):
-            for j in range(100):
+        self.rows = 100
+        self.columns = 100
+
+        for i in range(self.rows):
+            for j in range(self.columns):
                 btn = QtWidgets.QPushButton()
                 btn.setAttribute(QtCore.Qt.WA_StyledBackground)
                 btn.setFixedSize(100, 100)
@@ -114,6 +119,45 @@ class MapEditorWindow(QtWidgets.QDialog):
         self.buttonAreaLayout.addWidget(self.saveButton)
         self.buttonAreaLayout.addWidget(self.loadButton)
 
+    def clearGrid(self):
+        for pos in _tiles:
+            button = self.gridLayout.itemAtPosition(*pos).widget()
+            button.setText("")
+            _set_button_style(button, selected=False, start=False, filled=False)
+
+    def serialize(self):
+        attrs = {}
+        start_tile = _tiles[self.startTilePosition]
+
+        attrs['tile_list'] = tile.crawler(start_tile)
+        attrs['start_tile'] = start_tile.tile_id
+        attrs['positions'] = {_tiles[pos].tile_id: list(pos) for pos in _tiles}
+
+        return attrs
+
+    def deserialize(self, attrs):
+        start_tile = tile.builder(attrs['tile_list'], attrs['start_tile'], obj_version)
+
+        _tiles.clear()
+        self.clearGrid()
+
+        for tile_id in attrs['positions']:
+            pos = tuple(attrs['positions'][tile_id])
+            tileobj = tile.get_tile_by_id(tile_id)
+            if tileobj is None:
+                continue
+
+            _tiles[pos] = tileobj
+            button = self.gridLayout.itemAtPosition(*pos).widget()
+            button.setText(tileobj.tile_id)
+
+            if tileobj is start_tile:
+                _set_button_style(button, selected=False, start=True, filled=True)
+            else:
+                _set_button_style(button, selected=False, start=False, filled=True)
+
+        self.startTilePosition = tuple(attrs['positions'][start_tile.tile_id])
+
     def onStartTileSet(self, state):
         if state == QtCore.Qt.Checked:
             if self.startTilePosition is not None:
@@ -140,6 +184,9 @@ class MapEditorWindow(QtWidgets.QDialog):
 					         "", "All Files (*);;Text Files (*.txt)",
                                                  options=options)
 
+        with open(filename, 'w') as fh:
+            json.dump(self.serialize(), fh)
+
     def loadButtonClicked(self):
         filedialog = QtWidgets.QFileDialog
        	options = filedialog.Options()
@@ -147,6 +194,11 @@ class MapEditorWindow(QtWidgets.QDialog):
         filename, _ = filedialog.getOpenFileName(self, "QFileDialog.getOpenFileName()",
 					         "", "All Files (*);;Text Files (*.txt)",
                                                  options=options)
+
+        with open(filename, 'r') as fh:
+            attrs = json.load(fh)
+
+        self.deserialize(attrs)
 
     def exportButtonClicked(self):
         pass
@@ -229,9 +281,9 @@ class MapEditorWindow(QtWidgets.QDialog):
         position = self.getButtonPosition(button)
 
         if position in _tiles:
-            tile = _tiles[position]
+            tileobj = _tiles[position]
         else:
-            tile = Tile()
+            tileobj = tile.Tile()
 
         spec = {
             'description': {'type':'str'},
@@ -245,7 +297,7 @@ class MapEditorWindow(QtWidgets.QDialog):
             'ground_taste_description': {'type': 'str', 'label': 'ground taste description'}
         }
 
-        dialog = QtAutoForm(tile, spec)
+        dialog = QtAutoForm(tileobj, spec)
         dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         dialog.exec_()
 
@@ -257,27 +309,27 @@ class MapEditorWindow(QtWidgets.QDialog):
         if position not in _tiles:
             _set_button_style(button, selected=True, start=False, filled=True)
 
-        button.setText(str(tile.tile_id))
-        _tiles[position] = tile
+        button.setText(str(tileobj.tile_id))
+        _tiles[position] = tileobj
         self.setSelectedPosition(button)
 
         # Connect tile to surrounding tiles
         north, south, east, west = self.surroundingTiles(position)
         if north:
-            tile.north = north
-            north.south = tile
+            tileobj.north = north
+            north.south = tileobj
 
         if south:
-            tile.south = south
-            south.north = tile
+            tileobj.south = south
+            south.north = tileobj
 
         if east:
-            tile.east = east
-            east.west = tile
+            tileobj.east = east
+            east.west = tileobj
 
         if west:
-            tile.west = west
-            west.east = tile
+            tileobj.west = west
+            west.east = tileobj
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
