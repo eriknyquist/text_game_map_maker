@@ -4,6 +4,7 @@ import json
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 from text_game_maker.tile import tile
+from text_game_maker.player import player
 from text_game_maker.game_objects.base import serialize, deserialize
 from text_game_maker.game_objects import __object_model_version__ as obj_version
 
@@ -11,11 +12,12 @@ from qt_auto_form import QtAutoForm
 
 _tiles = {}
 
+tile_border_pixels = 4
 start_tile_colour = '#6bfa75'
 tile_border_colour = '#000000'
 selected_border_colour = '#ff0000'
-door_colour = QtCore.Qt.blue
-keypad_door_colour = QtCore.Qt.green
+door_colour = QtCore.Qt.black
+keypad_door_colour = QtCore.Qt.blue
 
 button_style = "border:4px solid %s; background-color: None" % tile_border_colour
 start_button_style = "border:4px solid %s; background-color: %s" % (tile_border_colour, start_tile_colour)
@@ -25,9 +27,9 @@ def _set_button_style(button, selected=False, start=False, filled=True):
     border = ""
 
     if selected:
-        border = "border:4px solid %s" % selected_border_colour
+        border = "border:%dpx solid %s" % (tile_border_pixels, selected_border_colour)
     elif filled:
-        border = "border:4px solid %s" % tile_border_colour
+        border = "border:%dpx solid %s" % (tile_border_pixels, tile_border_colour)
 
     if start:
         colour = "background-color: %s" % start_tile_colour
@@ -45,6 +47,22 @@ class Button(QtWidgets.QPushButton):
         super(Button, self).__init__(parent)
         self.doors = []
         self.keypad_doors = []
+        self.main = parent
+
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.MouseButtonPress:
+            if event.button() == QtCore.Qt.LeftButton:
+                self.main.onLeftClick(obj)
+            elif event.button() == QtCore.Qt.RightButton:
+                self.main.onRightClick(obj)
+            elif event.button() == QtCore.Qt.MiddleButton:
+                self.main.onMiddleClick(obj)
+
+        elif event.type() == QtCore.QEvent.KeyPress:
+            if event.key() in [QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return]:
+                self.main.onLeftClick(obj)
+
+        return QtCore.QObject.event(obj, event)
 
     def add_doors(self, doors=[], keypad_doors=[]):
         self.doors.extend(doors)
@@ -63,24 +81,28 @@ class Button(QtWidgets.QPushButton):
     def draw_door(self, colour, direction):
         width = self.frameGeometry().width()
         height = self.frameGeometry().height()
+        borderdelta = tile_border_pixels * 2
 
-        qwidth = width / 4
-        qheight = height / 4
+        qwidth = (width - borderdelta) / 4.0
+        qheight = (height - borderdelta) / 4.0
+
+        adjusted_qheight = qheight + borderdelta
+        adjusted_qwidth = qwidth + borderdelta
 
         if direction == "north":
-            points = (qheight, 0, height - qheight, 0)
+            points = (adjusted_qheight, 0, height - adjusted_qheight, 0)
         elif direction == "south":
-            points = (qheight, width, height - qheight, width)
+            points = (adjusted_qheight, width, height - adjusted_qheight, width)
         if direction == "east":
-            points = (height, qwidth, height, width - qwidth)
+            points = (height, adjusted_qwidth, height, width - adjusted_qwidth)
         if direction == "west":
-            points = (0, qwidth, 0, width - qwidth)
+            points = (0, adjusted_qwidth, 0, width - adjusted_qwidth)
 
-        self.draw_line(colour, *points)
+        self.draw_line(colour, qwidth, *points)
 
-    def draw_line(self, colour, x1, y1, x2, y2):
+    def draw_line(self, colour, width, x1, y1, x2, y2):
         painter = QtGui.QPainter(self)
-        painter.setPen(QtGui.QPen(colour, self.frameGeometry().width() / 8))
+        painter.setPen(QtGui.QPen(colour, width))
         brush = QtGui.QBrush()
         painter.setBrush(brush)
         painter.drawLine(QtCore.QLine(x1, y1, x2, y2))
@@ -170,11 +192,41 @@ class MapEditorWindow(QtWidgets.QDialog):
 
         for i in range(self.rows):
             for j in range(self.columns):
-                btn = Button()
+                btn = Button(self)
                 btn.setAttribute(QtCore.Qt.WA_StyledBackground)
                 btn.setFixedSize(100, 100)
-                btn.installEventFilter(self)
+                btn.installEventFilter(btn)
                 self.gridLayout.addWidget(btn, i, j)
+
+        QtWidgets.QShortcut(QtGui.QKeySequence("right"), self, self.rightKeyPress)
+        QtWidgets.QShortcut(QtGui.QKeySequence("left"), self, self.leftKeyPress)
+        QtWidgets.QShortcut(QtGui.QKeySequence("up"), self, self.upKeyPress)
+        QtWidgets.QShortcut(QtGui.QKeySequence("down"), self, self.downKeyPress)
+
+    def moveSelection(self, y_move, x_move):
+        if self.selectedPosition is None:
+            return
+
+        y, x = self.selectedPosition
+        newpos = (y + y_move, x + x_move)
+
+        if (newpos[0] < 0) or newpos[1] < 0:
+            return
+
+        button = self.gridLayout.itemAtPosition(*newpos).widget()
+        self.setSelectedPosition(button)
+
+    def leftKeyPress(self):
+        self.moveSelection(0, -1)
+
+    def rightKeyPress(self):
+        self.moveSelection(0, 1)
+
+    def upKeyPress(self):
+        self.moveSelection(-1, 0)
+
+    def downKeyPress(self):
+        self.moveSelection(1, 0)
 
     def buildToolbar(self):
         self.deleteButton = QtWidgets.QPushButton()
@@ -285,6 +337,62 @@ class MapEditorWindow(QtWidgets.QDialog):
             self.redrawDoors(button, tileobj)
 
         self.startTilePosition = tuple(attrs['positions'][start_tile.tile_id])
+
+    def deserializeFromSaveFile(self, attrs):
+        if (player.TILES_KEY not in attrs) or (player.START_TILE_KEY not in attrs):
+            return False
+
+        # build tilemap from list of tile data
+        tilelist = attrs[TILES_KEY]
+        start_tile_name = attrs[START_TILE_KEY]
+        start_tile = tile.builder(tilelist, start_tile_name, obj_version)
+
+        # find lowest index tile in tilemap
+        lowest_tile = self.closestTileToOrigin(start_tile)
+
+        return True
+
+    def closestTileToOrigin(self, tilemap):
+        movemap = {
+            'north': (0, -1),
+            'south': (0, 1),
+            'east': (1, 0),
+            'west': (-1, 0),
+        }
+
+        seen = []
+        pos = (0, 0)
+        lowest_tile = start_tile
+        lowest_tile_pos = (0, 0)
+        tilestack = [(start_tile, None, None)]
+
+        while tilestack:
+            curr, newpos, movedir = tilestack.pop(0)
+            if newpos is not None:
+                pos = newpos
+
+            if curr in seen:
+                continue
+
+            seen.append(curr)
+
+            if movedir is not None:
+                xinc, yinc = movemap[movedir]
+                oldx, oldy = pos
+                newx, newy = oldx + xinc, oldy + yinc
+                pos = (newx, newy)
+
+                lowestx, lowesty = lowest_tile_pos
+                if (newx <= lowestx) and (newy <= lowesty):
+                    lowest_tile_pos = pos
+                    lowest_tile = curr
+
+            for direction in movemap:
+                n = getattr(curr, direction)
+                if n:
+                    tilestack.append((n, pos, direction))
+
+            return lowest_tile
 
     def onStartTileSet(self, state):
         if state == QtCore.Qt.Checked:
@@ -470,17 +578,6 @@ class MapEditorWindow(QtWidgets.QDialog):
 
         return north, south, east, west
 
-    def eventFilter(self, obj, event):
-        if event.type() == QtCore.QEvent.MouseButtonPress:
-            if event.button() == QtCore.Qt.LeftButton:
-                self.onLeftClick(obj)
-            elif event.button() == QtCore.Qt.RightButton:
-                self.onRightClick(obj)
-            elif event.button() == QtCore.Qt.MiddleButton:
-                self.onMiddleClick(obj)
-
-        return QtCore.QObject.event(obj, event)
-
     def setSelectedPosition(self, button):
         if self.selectedPosition is not None:
             oldstart = self.selectedPosition == self.startTilePosition
@@ -510,6 +607,8 @@ class MapEditorWindow(QtWidgets.QDialog):
         for obj in [self.doorButton, self.keypadDoorButton, self.deleteButton]:
             if obj.isEnabled() != filled:
                 obj.setEnabled(filled)
+
+        button.setFocus(True)
 
     def onMiddleClick(self, button):
         pass
