@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QComboBox,
+from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QComboBox, QPlainTextEdit,
     QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
     QSpinBox, QDoubleSpinBox, QTextEdit, QVBoxLayout, QCheckBox, QSizePolicy)
 
@@ -16,6 +16,7 @@ def _double_spin_box():
 
 _input_decoders = {
     'str': (lambda x: x.text(), lambda x, y: x.setText(y), lambda: QLineEdit()),
+    'long_str': (lambda x: x.toPlainText(), lambda x, y: x.insertPlainText(y), lambda: QPlainTextEdit()),
     'int': (lambda x: x.value(), lambda x, y: x.setValue(y), _spin_box),
     'float': (lambda x: x.value(), lambda x, y: x.setValue(y), _double_spin_box),
     'bool': (lambda x: x.isChecked(), lambda x, y: x.setChecked(y), lambda: QCheckBox()),
