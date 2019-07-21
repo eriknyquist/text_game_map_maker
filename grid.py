@@ -192,7 +192,7 @@ class TileSettings(object):
         'tile_id': {'type': 'str', 'label': 'tile ID'},
         'first_visit_message': {'type': 'long_str', 'label': 'first visit message'},
         'first_visit_message_in_dark': {'type': 'bool', 'label': 'show first visit message if dark'},
-        'dark': 'bool',
+        'dark': {'type': 'bool'},
         'smell_description': {'type': 'str', 'label': 'smell description'},
         'ground_smell_description': {'type': 'str', 'label': 'ground smell description'},
         'ground_taste_description': {'type': 'str', 'label': 'ground taste description'}
