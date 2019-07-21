@@ -331,6 +331,12 @@ class MapEditorWindow(QtWidgets.QDialog):
         self.buttonAreaLayout.addWidget(self.loadButton)
         self.buttonAreaLayout.addWidget(self.loadFromSavedGameButton)
 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Escape:
+            reply = self.yesNoDialog("Are you sure?", "Are you sure you want to quit?")
+            if reply:
+                self.close()
+
     def clearGrid(self):
         for pos in _tiles:
             button = self.gridLayout.itemAtPosition(*pos).widget()
