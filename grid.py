@@ -198,10 +198,15 @@ class MapEditorWindow(QtWidgets.QDialog):
                 btn.installEventFilter(btn)
                 self.gridLayout.addWidget(btn, i, j)
 
+        # Set up shortcuts for arrow keys
         QtWidgets.QShortcut(QtGui.QKeySequence("right"), self, self.rightKeyPress)
         QtWidgets.QShortcut(QtGui.QKeySequence("left"), self, self.leftKeyPress)
         QtWidgets.QShortcut(QtGui.QKeySequence("up"), self, self.upKeyPress)
         QtWidgets.QShortcut(QtGui.QKeySequence("down"), self, self.downKeyPress)
+
+        # Set initial selection position
+        button = self.gridLayout.itemAtPosition(0, 0).widget()
+        self.setSelectedPosition(button)
 
     def moveSelection(self, y_move, x_move):
         if self.selectedPosition is None:
@@ -316,8 +321,8 @@ class MapEditorWindow(QtWidgets.QDialog):
     def deserialize(self, attrs):
         start_tile = tile.builder(attrs['tile_list'], attrs['start_tile'], obj_version)
 
-        _tiles.clear()
         self.clearGrid()
+        _tiles.clear()
 
         for tile_id in attrs['positions']:
             pos = tuple(attrs['positions'][tile_id])
@@ -657,7 +662,8 @@ class MapEditorWindow(QtWidgets.QDialog):
             else:
                 complete = True
 
-        tileobj.set_tile_id(settings.tile_id)
+        if settings.tile_id != tileobj.tile_id:
+            tileobj.set_tile_id(settings.tile_id)
 
         tileobj.description = settings.description
         tileobj.name = settings.name
