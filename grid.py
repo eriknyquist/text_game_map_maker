@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import zlib
@@ -186,10 +187,10 @@ class KeypadDoorSettings(object):
 
 class TileSettings(object):
     spec = {
-        'description': {'type':'str'},
+        'description': {'type':'long_str'},
         'name': {'type': 'str'},
         'tile_id': {'type': 'str', 'label': 'tile ID'},
-        'first_visit_message': {'type': 'str', 'label': 'first visit message'},
+        'first_visit_message': {'type': 'long_str', 'label': 'first visit message'},
         'first_visit_message_in_dark': {'type': 'bool', 'label': 'show first visit message if dark'},
         'dark': 'bool',
         'smell_description': {'type': 'str', 'label': 'smell description'},
@@ -375,11 +376,8 @@ class MapEditorWindow(QtWidgets.QDialog):
             button = self.gridLayout.itemAtPosition(*pos).widget()
             button.setText(tileobj.tile_id)
 
-            if tileobj is start_tile:
-                _set_button_style(button, selected=False, start=True, filled=True)
-            else:
-                _set_button_style(button, selected=False, start=False, filled=True)
-
+            is_start = tileobj is start_tile
+            _set_button_style(button, selected=False, start=is_start, filled=True)
             self.redrawDoors(button, tileobj)
 
     def deserialize(self, attrs):
@@ -524,10 +522,23 @@ class MapEditorWindow(QtWidgets.QDialog):
                              "", "All Files (*);;Text Files (*.txt)",
                                                  options=options)
 
-        with open(filename, 'rb') as fh:
-            data = fh.read()
-            strdata = zlib.decompress(data).decode("utf-8")
-            attrs = json.loads(strdata)
+        if filename.strip() == '':
+            return
+
+        if not os.path.exists(filename):
+            self.errorDialog("Error opening file", "Unable to open file '%s'" % filename)
+            return
+
+        try:
+            with open(filename, 'rb') as fh:
+                data = fh.read()
+                strdata = zlib.decompress(data).decode("utf-8")
+                attrs = json.loads(strdata)
+        except Exception as e:
+            self.errorDialog("Error loading saved game state",
+                             "Unable to load saved game data from file %s: %s"
+                             % (filename, str(e)))
+            return
 
         self.deserializeFromSaveFile(attrs)
 
@@ -548,7 +559,12 @@ class MapEditorWindow(QtWidgets.QDialog):
         self.disconnectSurroundingTiles(tileobj, self.selectedPosition)
         del _tiles[self.selectedPosition]
         button.setText("")
+
+        if self.startTilePosition == self.selectedPosition:
+            self.startTilePosition = None
+
         _set_button_style(button, selected=False, start=False, filled=False)
+        self.redrawDoors(button, tileobj)
 
     def doorButtonClicked(self):
         settings = DoorSettings()
@@ -641,10 +657,22 @@ class MapEditorWindow(QtWidgets.QDialog):
                              "", "All Files (*);;Text Files (*.txt)",
                                                  options=options)
 
-        with open(filename, 'r') as fh:
-            attrs = json.load(fh)
+        if filename.strip() == '':
+            return
 
-        self.deserialize(attrs)
+        if not os.path.exists(filename):
+            self.errorDialog("Error opening file", "Unable to open file '%s'" % filename)
+            return
+
+        try:
+            with open(filename, 'r') as fh:
+                attrs = json.load(fh)
+
+            self.deserialize(attrs)
+        except Exception as e:
+            self.errorDialog("Error loading saved map data",
+                             "Unable to load saved map data from file %s: %s"
+                             % (filename, str(e)))
 
     def getButtonPosition(self, button):
         idx = self.gridLayout.indexOf(button)
