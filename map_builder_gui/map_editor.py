@@ -91,7 +91,6 @@ def _silent_checkbox_set(checkbox, value, handler):
 class MapEditor(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(MapEditor, self).__init__(parent=parent)
-        self.door_id = 1
         self.resize(500, 400)
         self.mainLayout = QtWidgets.QVBoxLayout(self)
         self.gridAreaLayout = QtWidgets.QHBoxLayout()
@@ -131,7 +130,7 @@ class MapEditor(QtWidgets.QDialog):
         QtWidgets.QShortcut(QtGui.QKeySequence("down"), self, self.downKeyPress)
 
         # Set initial selection position
-        button = self.gridLayout.itemAtPosition(0, 0).widget()
+        button = self.buttonAtPosition(0, 0)
         self.setSelectedPosition(button)
 
     def moveSelection(self, y_move, x_move):
@@ -144,7 +143,7 @@ class MapEditor(QtWidgets.QDialog):
         if (newpos[0] < 0) or newpos[1] < 0:
             return
 
-        button = self.gridLayout.itemAtPosition(*newpos).widget()
+        button = self.buttonAtPosition(*newpos)
         self.setSelectedPosition(button)
 
     def leftKeyPress(self):
@@ -162,21 +161,18 @@ class MapEditor(QtWidgets.QDialog):
     def buildToolbar(self):
         self.deleteButton = QtWidgets.QPushButton()
         self.doorButton = QtWidgets.QPushButton()
-        self.keypadDoorButton = QtWidgets.QPushButton()
         self.saveButton = QtWidgets.QPushButton()
         self.loadButton = QtWidgets.QPushButton()
         self.loadFromSavedGameButton = QtWidgets.QPushButton()
 
         self.deleteButton.setText("Delete tile")
-        self.doorButton.setText("Add door")
-        self.keypadDoorButton.setText("Add door with keypad")
+        self.doorButton.setText("Edit doors")
         self.saveButton.setText("Save to file")
         self.loadButton.setText("Load from file")
         self.loadFromSavedGameButton.setText("Load map from saved game")
 
         self.deleteButton.clicked.connect(self.deleteButtonClicked)
         self.doorButton.clicked.connect(self.doorButtonClicked)
-        self.keypadDoorButton.clicked.connect(self.keypadDoorButtonClicked)
         self.saveButton.clicked.connect(self.saveButtonClicked)
         self.loadButton.clicked.connect(self.loadButtonClicked)
         self.loadFromSavedGameButton.clicked.connect(self.loadFromSavedGameButtonClicked)
@@ -195,13 +191,11 @@ class MapEditor(QtWidgets.QDialog):
         checkBoxLayout.setAlignment(QtCore.Qt.AlignCenter)
 
         self.doorButton.setEnabled(False)
-        self.keypadDoorButton.setEnabled(False)
         self.deleteButton.setEnabled(False)
 
         tileButtonLayout = QtWidgets.QHBoxLayout()
         tileButtonLayout.addWidget(self.deleteButton)
         tileButtonLayout.addWidget(self.doorButton)
-        tileButtonLayout.addWidget(self.keypadDoorButton)
         tileButtonLayout.addLayout(checkBoxLayout)
         tileButtonGroup = QtWidgets.QGroupBox("Edit selected tile")
         tileButtonGroup.setLayout(tileButtonLayout)
@@ -219,8 +213,9 @@ class MapEditor(QtWidgets.QDialog):
 
     def clearGrid(self):
         for pos in _tiles:
-            button = self.gridLayout.itemAtPosition(*pos).widget()
+            button = self.buttonAtPosition(*pos)
             button.setText("")
+            button.clear_doors()
             setButtonStyle(button, selected=False, start=False, filled=False)
 
     def yesNoDialog(self, header="", msg="Are you sure?"):
@@ -259,7 +254,7 @@ class MapEditor(QtWidgets.QDialog):
                 continue
 
             _tiles[pos] = tileobj
-            button = self.gridLayout.itemAtPosition(*pos).widget()
+            button = self.buttonAtPosition(*pos)
             button.setText(tileobj.tile_id)
 
             is_start = tileobj is start_tile
@@ -319,6 +314,9 @@ class MapEditor(QtWidgets.QDialog):
 
         return True
 
+    def buttonAtPosition(self, y, x):
+        return self.gridLayout.itemAtPosition(y, x).widget()
+
     def closestTileToOrigin(self, tilemap):
         seen = []
         pos = (0, 0)
@@ -358,10 +356,10 @@ class MapEditor(QtWidgets.QDialog):
         if state == QtCore.Qt.Checked:
             if self.startTilePosition is not None:
                 # Set current start tile colour back to default
-                old_start = self.gridLayout.itemAtPosition(*self.startTilePosition).widget()
+                old_start = self.buttonAtPosition(*self.startTilePosition)
                 setButtonStyle(old_start, selected=False, start=False, filled=True)
 
-            new_start = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
+            new_start = self.buttonAtPosition(*self.selectedPosition)
             setButtonStyle(new_start, selected=True, start=True, filled=True)
             self.startTilePosition = self.selectedPosition
             self.startTileCheckBox.setEnabled(False)
@@ -369,38 +367,6 @@ class MapEditor(QtWidgets.QDialog):
     def tileIDExists(self, tile_id):
         val = tile.get_tile_by_id(tile_id)
         return val is not None
-
-    def getDoorSettings(self, settings_obj, window_title):
-        complete = False
-        settings_obj.tile_id = "door%d" % self.door_id
-        self.door_id += 1
-
-        while not complete:
-            dialog = QtAutoForm(settings_obj, title=window_title, spec=settings_obj.spec)
-            dialog.setWindowModality(QtCore.Qt.ApplicationModal)
-            dialog.exec_()
-
-            # Dialog was cancelled, we're done
-            if not dialog.wasAccepted():
-                return False
-
-            if str(settings_obj.tile_id).strip() == '':
-                self.errorDialog("Invalid tile ID", "tile ID field cannot be empty")
-            elif self.tileIDExists(settings_obj.tile_id):
-                self.errorDialog("Unable to create door",
-                                 "Tile ID '%s' is already is use!" % settings_obj.tile_id)
-            else:
-                complete = True
-
-        return True
-
-    def oppositeDoorExists(self, opposite_tile, direction):
-        if not opposite_tile:
-            return False
-
-        opposite_dir = tile.reverse_direction(direction)
-        opposite = getattr(opposite_tile, opposite_dir)
-        return opposite and opposite.is_door()
 
     def loadFromSavedGameButtonClicked(self):
         filedialog = QtWidgets.QFileDialog
@@ -437,7 +403,7 @@ class MapEditor(QtWidgets.QDialog):
             return
 
         tileobj = _tiles[self.selectedPosition]
-        button = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
+        button = self.buttonAtPosition(*self.selectedPosition)
 
         reply = self.yesNoDialog("Are you sure?", "Are you sure you want to "
                                 "delete this tile (tile ID is '%s')" % (tileobj.tile_id))
@@ -456,63 +422,11 @@ class MapEditor(QtWidgets.QDialog):
 
     def doorButtonClicked(self):
         tileobj = _tiles[self.selectedPosition]
-        button = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
+        button = self.buttonAtPosition(*self.selectedPosition)
 
         doors_dialog = DoorEditor(self, tileobj)
         doors_dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         doors_dialog.exec_()
-
-    def _old_doorButtonClicked(self):
-        settings = forms.DoorSettings()
-        wasAccepted = self.getDoorSettings(settings, "Door settings")
-        if not wasAccepted:
-            return
-
-        tileobj = _tiles[self.selectedPosition]
-        button = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
-
-        replace = getattr(tileobj, settings.direction)
-
-        # Check if there's already a door in this direction on the adjacent tile
-        if self.oppositeDoorExists(replace, settings.direction):
-            self.errorDialog("Unable to add door", "There is an existing door "
-                             " locked from the opposite direction (tile ID '%s')"
-                             % replace.tile_id)
-            return
-
-        door = tile.LockedDoor(settings.prefix, settings.name, tileobj, replace)
-        door.set_tile_id(settings.tile_id)
-        setattr(tileobj, settings.direction, door)
-
-        button.add_doors(doors=[settings.direction])
-
-    def keypadDoorButtonClicked(self):
-        settings = forms.KeypadDoorSettings()
-        wasAccepted = self.getDoorSettings(settings, "Keypad door settings")
-        if not wasAccepted:
-            return
-
-        tileobj = _tiles[self.selectedPosition]
-        button = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
-
-        replace = getattr(tileobj, settings.direction)
-
-        # Check if there's already a door in this direction on the adjacent tile
-        if self.oppositeDoorExists(replace, settings.direction):
-            self.errorDialog("Unable to add door", "There is an existing door "
-                             " locked from the opposite direction (tile ID '%s')"
-                             % replace.tile_id)
-            return
-
-        door = tile.LockedDoorWithKeypad(settings.code, prefix=settings.prefix,
-                                         name=settings.name, src_tile=tileobj,
-                                         replacement_tile=replace)
-
-        door.set_tile_id(settings.tile_id)
-        door.set_prompt(settings.prompt)
-        setattr(tileobj, settings.direction, door)
-
-        button.add_doors(keypad_doors=[settings.direction])
 
     def redrawDoors(self, button, tileobj):
         doors = []
@@ -526,8 +440,7 @@ class MapEditor(QtWidgets.QDialog):
                 elif type(attr) == tile.LockedDoorWithKeypad:
                     keypad_doors.append(direction)
 
-        button.doors = []
-        button.keypad_doors = []
+        button.clear_doors()
         button.add_doors(doors, keypad_doors)
 
     def saveButtonClicked(self):
@@ -601,7 +514,7 @@ class MapEditor(QtWidgets.QDialog):
         if self.selectedPosition is not None:
             oldstart = self.selectedPosition == self.startTilePosition
             oldfilled = self.selectedPosition in _tiles
-            oldbutton = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
+            oldbutton = self.buttonAtPosition(*self.selectedPosition)
             setButtonStyle(oldbutton, selected=False, start=oldstart, filled=oldfilled)
 
         self.selectedPosition = self.getButtonPosition(button)
@@ -623,7 +536,7 @@ class MapEditor(QtWidgets.QDialog):
             _silent_checkbox_set(self.startTileCheckBox, False, self.onStartTileSet)
             self.startTileCheckBox.setEnabled(False)
 
-        for obj in [self.doorButton, self.keypadDoorButton, self.deleteButton]:
+        for obj in [self.doorButton, self.deleteButton]:
             if obj.isEnabled() != filled:
                 obj.setEnabled(filled)
 

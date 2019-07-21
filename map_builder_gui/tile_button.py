@@ -27,6 +27,21 @@ class TileButton(QtWidgets.QPushButton):
 
         return QtCore.QObject.event(obj, event)
 
+    def clear_doors(self):
+        self.doors = []
+        self.keypad_doors = []
+        self.update()
+
+    def remove_doors(self, directions=[]):
+        for d in directions:
+            if d in self.doors:
+                self.doors.remove(d)
+
+            if d in self.keypad_doors:
+                self.keypad_doors.remove(d)
+
+        self.update()
+
     def add_doors(self, doors=[], keypad_doors=[]):
         self.doors.extend(doors)
         self.keypad_doors.extend(keypad_doors)

@@ -2,6 +2,8 @@ from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QComboBox, QPlainTextEdi
     QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
     QSpinBox, QDoubleSpinBox, QTextEdit, QVBoxLayout, QCheckBox, QSizePolicy)
 
+from PyQt5 import QtCore
+
 def _spin_box():
     w = QSpinBox()
     w.setMaximum((2 ** 31) - 1)
@@ -14,6 +16,16 @@ def _double_spin_box():
     w.setMinimum(float(-(2 ** 31)) + 1.0)
     return w
 
+def _combo_box_set_text(combo, text):
+    index = combo.findText(text, QtCore.Qt.MatchFixedString)
+    if index >= 0:
+        combo.setCurrentIndex(index)
+
+def _plain_text_edit():
+    w = QPlainTextEdit()
+    w.setTabChangesFocus(True)
+    return w
+
 _input_decoders = {
     'str': (
         lambda x: x.text(),
@@ -23,7 +35,7 @@ _input_decoders = {
     'long_str': (
         lambda x: x.toPlainText(),
         lambda x, y: x.insertPlainText(y),
-        lambda: QPlainTextEdit(),
+        _plain_text_edit,
         ''),
     'int': (
         lambda x: x.value(),
@@ -42,7 +54,7 @@ _input_decoders = {
         False),
     'choice': (
         lambda x: x.currentText(),
-        lambda x, y: None,
+        _combo_box_set_text,
         lambda: QComboBox(),
         '')
 }
@@ -59,9 +71,6 @@ class InputWidget(object):
         self.label = QLabel("%s:" % label)
         self.default_value = default_value
 
-        if typename == 'long_str':
-            self.widget.setTabChangesFocus(True)
-
     def setInstanceValue(self):
         value = self.value_getter(self.widget)
         if value == self.default_value:
@@ -77,19 +86,17 @@ class InputWidget(object):
         setattr(self.instance, self.attr, value)
 
     def setWidgetValue(self, value):
-        if self.typename == "choice":
-            return
-
         value = getattr(self.instance, self.attr)
-        if value is None:
-            value = self.default_value
-        else:
-            try:
-                cast_value = eval(self.typename)(value)
-            except Exception:
-                value = str(value)
+        if self.typename != "choice":
+            if value is None:
+                value = self.default_value
             else:
-                value = cast_value
+                try:
+                    cast_value = eval(self.typename)(value)
+                except Exception:
+                    value = str(value)
+                else:
+                    value = cast_value
 
         self.value_setter(self.widget, value)
 

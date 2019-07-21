@@ -1,9 +1,15 @@
+import forms
+from qt_auto_form import QtAutoForm
+
+from text_game_maker.tile import tile
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 class DoorEditor(QtWidgets.QDialog):
     def __init__(self, parent, tileobj):
         super(DoorEditor, self).__init__(parent=parent)
 
+        self.door_id = 1
+        self.main = parent
         self.tile = tileobj
         self.directions = {}
 
@@ -42,6 +48,10 @@ class DoorEditor(QtWidgets.QDialog):
         self.editButton.setText("Edit door")
         self.deleteButton.setText("Delete door")
 
+        self.editButton.clicked.connect(self.editButtonClicked)
+        self.addButton.clicked.connect(self.addButtonClicked)
+        self.deleteButton.clicked.connect(self.deleteButtonClicked)
+
         buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.addWidget(self.addButton)
         buttonLayout.addWidget(self.editButton)
@@ -57,6 +67,109 @@ class DoorEditor(QtWidgets.QDialog):
         self.setLayout(mainLayout)
         self.setWindowTitle("Door Editor")
 
+    def getSelectedDirection(self, rowNumber):
+        door_id = self.table.item(rowNumber, 0).text()
+        return door_id, direction
+
+    def addButtonClicked(self):
+        classobjs = [tile.LockedDoor, tile.LockedDoorWithKeypad]
+        doortypes = {obj.__name__: obj for obj in classobjs}
+
+        item, accepted = QtWidgets.QInputDialog.getItem(self,
+                                                        "select door type",
+                                                        "Select a door type",
+                                                        doortypes, 0, False)
+
+        doortype = doortypes[item]
+        if doortype == tile.LockedDoor:
+            settings = forms.DoorSettings()
+        else:
+            settings = forms.KeypadDoorSettings()
+
+        direction, doorobj = self.populateDoorSettings(settings, None)
+        if doorobj is None:
+            return
+
+        if self.main.tileIDExists(doorobj.tile_id):
+            self.main.errorDialog("Unable to create door",
+                                  "Tile ID '%s' is already is use!"
+                                    % doorobj.tile_id)
+            return
+
+        if direction in self.directions:
+            self.main.errorDialog("Unable to create door",
+                                  "There is already a door to the %s" % direction)
+            return
+
+        self.directions[direction] = doorobj
+        button = self.main.buttonAtPosition(*self.main.selectedPosition)
+
+        if doortype == tile.LockedDoor:
+            button.add_doors(doors=[settings.direction])
+        else:
+            button.add_doors(keypad_doors=[settings.direction])
+
+        setattr(self.tile, direction, doorobj)
+        self.addRow(doorobj, direction)
+
+    def editButtonClicked(self):
+        selectedRow = self.table.currentRow()
+        if selectedRow < 0:
+            return
+
+        direction = self.table.item(selectedRow, 2).text()
+        doorobj = getattr(self.tile, direction)
+
+        if type(doorobj) == tile.LockedDoor:
+            settings = forms.DoorSettings()
+        else:
+            settings = forms.KeypadDoorSettings()
+
+        new_direction, new_doorobj = self.populateDoorSettings(settings, doorobj)
+        if new_doorobj is None:
+            return
+
+        old_tile_id = doorobj.tile_id if doorobj else None
+
+        if old_tile_id != new_doorobj.tile_id:
+            if self.main.tileIDExists(new_doorobj.tile_id):
+                self.main.errorDialog("Unable to create door",
+                                      "Tile ID '%s' is already is use!"
+                                        % new_doorobj.tile_id)
+
+            new_doorobj.set_tile_id(new_doorobj.tile_id)
+            return
+
+        button = self.main.buttonAtPosition(*self.main.selectedPosition)
+
+        if type(new_doorobj) == tile.LockedDoor:
+            button.add_doors(doors=[settings.direction])
+        else:
+            button.add_doors(keypad_doors=[settings.direction])
+
+        if new_direction != direction:
+            setattr(self.tile, new_direction, doorobj)
+
+    def deleteButtonClicked(self):
+        selectedRow = self.table.currentRow()
+        if selectedRow < 0:
+            return
+
+        direction = self.table.item(selectedRow, 2).text()
+        doorobj = getattr(self.tile, direction)
+
+        reply = self.main.yesNoDialog("Really delete door?",
+                                      "Are you sure you want do delete this "
+                                      "door (%s)?" % doorobj.tile_id)
+        if not reply:
+            return
+
+        button = self.main.buttonAtPosition(*self.main.selectedPosition)
+        button.remove_doors([direction])
+        del self.directions[direction]
+        setattr(self.tile, direction, doorobj.replacement_tile)
+        self.table.removeRow(selectedRow)
+
     def addRow(self, door, direction):
         nextFreeRow = self.table.rowCount()
         self.table.insertRow(nextFreeRow)
@@ -69,3 +182,96 @@ class DoorEditor(QtWidgets.QDialog):
         self.table.setItem(nextFreeRow, 1, item2)
         self.table.setItem(nextFreeRow, 2, item3)
 
+    def getDoorSettings(self, settings_obj, window_title, tile_id):
+        complete = False
+        if tile_id is None:
+            settings_obj.tile_id = "door%d" % self.door_id
+            self.door_id += 1
+        else:
+            settings_obj.tile_id = tile_id
+
+        while not complete:
+            dialog = QtAutoForm(settings_obj, title=window_title, spec=settings_obj.spec)
+            dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+            dialog.exec_()
+
+            # Dialog was cancelled, we're done
+            if not dialog.wasAccepted():
+                return False
+
+            if str(settings_obj.tile_id).strip() == '':
+                self.main.errorDialog("Invalid tile ID", "tile ID field cannot be empty")
+
+            else:
+                complete = True
+
+        return True
+
+    def oppositeDoorExists(self, opposite_tile, direction):
+        if not opposite_tile:
+            return False
+
+        opposite_dir = tile.reverse_direction(direction)
+        opposite = getattr(opposite_tile, opposite_dir)
+        return opposite and opposite.is_door()
+
+    def formToInstance(self, settings, door, olddir, replace):
+        if type(settings) == forms.KeypadDoorSettings:
+            if door is None:
+                door = tile.LockedDoorWithKeypad(settings.code, prefix=settings.prefix,
+                                                name=settings.name, src_tile=self.tile,
+                                                replacement_tile=replace)
+            else:
+                door.__class__.__init__(door, settings.code, prefix=settings.prefix,
+                                        name=settings.name, src_tile=self.tile,
+                                        replacement_tile=replace)
+
+            door.set_prompt(settings.prompt)
+
+        elif type(settings) == forms.DoorSettings:
+            if door is None:
+                door = tile.LockedDoor(settings.prefix, settings.name, self.tile, replace)
+            else:
+                door.__class__.__init__(door, settings.prefix, settings.name,
+                                        self.tile, replace)
+
+        if olddir and (olddir != settings.direction):
+            setattr(self.tile, olddir, door.replacement_tile)
+
+        return door
+
+    def instanceToForm(self, settings, door):
+        settings.direction = self.tile.direction_to(door)
+        settings.prefix = door.prefix
+        settings.name = door.name
+
+        if type(door) == tile.LockedDoorWithKeypad:
+            settings.code = door.unlock_code
+            settings.prompt = door.prompt
+
+    def populateDoorSettings(self, settings, doorobj):
+        tile_id = None
+        olddir = None
+
+        if doorobj is not None:
+            tile_id = doorobj.tile_id
+            self.instanceToForm(settings, doorobj)
+            olddir = settings.direction
+
+        wasAccepted = self.getDoorSettings(settings, "Door settings", tile_id)
+        if not wasAccepted:
+            return None, None
+
+        replace = getattr(self.tile, settings.direction)
+
+        # Check if there's already a door in this direction on the adjacent tile
+        if self.oppositeDoorExists(replace, settings.direction):
+            self.errorDialog("Unable to add door", "There is an existing door "
+                             " locked from the opposite direction (tile ID '%s')"
+                             % replace.tile_id)
+            return None, None
+
+        doorobj = self.formToInstance(settings, doorobj, olddir, replace)
+
+        doorobj.tile_id = settings.tile_id
+        return settings.direction, doorobj
