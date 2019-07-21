@@ -411,18 +411,24 @@ class MapEditorWindow(QtWidgets.QDialog):
         return val is not None
 
     def getDoorSettings(self, settings_obj, window_title):
-        dialog = QtAutoForm(settings_obj, title=window_title, spec=settings_obj.spec)
-        dialog.setWindowModality(QtCore.Qt.ApplicationModal)
-        dialog.exec_()
+        complete = False
 
-        # Dialog was cancelled, we're done
-        if not dialog.wasAccepted():
-            return False
+        while not complete:
+            dialog = QtAutoForm(settings_obj, title=window_title, spec=settings_obj.spec)
+            dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+            dialog.exec_()
 
-        if self.tileIDExists(settings_obj.tile_id):
-            self.errorDialog("Unable to create door",
-                             "Tile ID '%s' is already is use!" % settings_obj.tile_id)
-            return False
+            # Dialog was cancelled, we're done
+            if not dialog.wasAccepted():
+                return False
+
+            if str(settings_obj.tile_id).strip() == '':
+                self.errorDialog("Invalid tile ID", "tile ID field cannot be empty")
+            elif self.tileIDExists(settings_obj.tile_id):
+                self.errorDialog("Unable to create door",
+                                 "Tile ID '%s' is already is use!" % settings_obj.tile_id)
+            else:
+                complete = True
 
         return True
 
@@ -634,20 +640,24 @@ class MapEditorWindow(QtWidgets.QDialog):
             tileobj = tile.Tile()
             settings.tile_id = tile.Tile.tile_id
 
-        dialog = QtAutoForm(settings, title="Tile attributes", spec=settings.spec)
-        dialog.setWindowModality(QtCore.Qt.ApplicationModal)
-        dialog.exec_()
+        complete = False
+        while not complete:
+            dialog = QtAutoForm(settings, title="Tile attributes", spec=settings.spec)
+            dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+            dialog.exec_()
 
-        if not dialog.wasAccepted():
-            return None
-
-        if (tileobj.tile_id != settings.tile_id):
-            if self.tileIDExists(settings.tile_id):
-                self.errorDialog("Unable to create tile", "Tile ID '%s' already in use!"
-                                 % settings.tile_id)
+            if not dialog.wasAccepted():
                 return None
 
-            tileobj.set_tile_id(settings.tile_id)
+            if str(settings.tile_id).strip() == '':
+                self.errorDialog("Invalid tile ID", "tile ID field cannot be empty")
+            elif (tileobj.tile_id != settings.tile_id) and self.tileIDExists(settings.tile_id):
+                self.errorDialog("Unable to create tile", "Tile ID '%s' already in use!"
+                                 % settings.tile_id)
+            else:
+                complete = True
+
+        tileobj.set_tile_id(settings.tile_id)
 
         tileobj.description = settings.description
         tileobj.name = settings.name
