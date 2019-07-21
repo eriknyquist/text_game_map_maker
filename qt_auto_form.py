@@ -34,6 +34,9 @@ class InputWidget(object):
         self.widget = widget_getter()
         self.label = QLabel("%s:" % label)
 
+        if typename == 'long_str':
+            self.widget.setTabChangesFocus(True)
+
     def setInstanceValue(self):
         value = self.value_getter(self.widget)
 
