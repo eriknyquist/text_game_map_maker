@@ -193,6 +193,7 @@ class DoorEditor(QtWidgets.QDialog):
         while not complete:
             dialog = QtAutoForm(settings_obj, title=window_title, spec=settings_obj.spec)
             dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+            dialog.setWindowIcon(QtGui.QIcon(self.main.iconPath))
             dialog.exec_()
 
             # Dialog was cancelled, we're done

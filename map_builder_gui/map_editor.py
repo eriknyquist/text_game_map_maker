@@ -29,7 +29,7 @@ _move_map = {
     'north': (-1, 0),
     'south': (1, 0),
     'east': (0, 1),
-    'west': (0, -1),
+    'west': (0, -1)
 }
 
 def getTilePositions(start_tile):
@@ -91,6 +91,10 @@ def _silent_checkbox_set(checkbox, value, handler):
 class MapEditor(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(MapEditor, self).__init__(parent=parent)
+        scriptDir = os.path.dirname(os.path.realpath(__file__))
+        self.iconPath = os.path.join(scriptDir, 'images', 'logo.png')
+        self.setWindowIcon(QtGui.QIcon(self.iconPath))
+
         self.resize(500, 400)
         self.mainLayout = QtWidgets.QVBoxLayout(self)
         self.gridAreaLayout = QtWidgets.QHBoxLayout()
@@ -570,6 +574,7 @@ class MapEditor(QtWidgets.QDialog):
         while not complete:
             dialog = QtAutoForm(settings, title="Tile attributes", spec=settings.spec)
             dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+            dialog.setWindowIcon(QtGui.QIcon(self.iconPath))
             dialog.exec_()
 
             if not dialog.wasAccepted():
