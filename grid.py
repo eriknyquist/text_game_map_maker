@@ -212,6 +212,7 @@ class TileSettings(object):
 class MapEditorWindow(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(MapEditorWindow, self).__init__(parent=parent)
+        self.door_id = 1
         self.resize(500, 400)
         self.mainLayout = QtWidgets.QVBoxLayout(self)
         self.gridAreaLayout = QtWidgets.QHBoxLayout()
@@ -492,6 +493,8 @@ class MapEditorWindow(QtWidgets.QDialog):
 
     def getDoorSettings(self, settings_obj, window_title):
         complete = False
+        settings_obj.tile_id = "door%d" % self.door_id
+        self.door_id += 1
 
         while not complete:
             dialog = QtAutoForm(settings_obj, title=window_title, spec=settings_obj.spec)
@@ -570,7 +573,7 @@ class MapEditorWindow(QtWidgets.QDialog):
             self.startTilePosition = None
 
         _set_button_style(button, selected=False, start=False, filled=False)
-        self.redrawDoors(button, tileobj)
+        self.redrawDoors(button, None)
 
     def doorButtonClicked(self):
         settings = DoorSettings()
@@ -628,12 +631,13 @@ class MapEditorWindow(QtWidgets.QDialog):
         doors = []
         keypad_doors = []
 
-        for direction in ['north', 'south', 'east', 'west']:
-            attr = getattr(tileobj, direction)
-            if type(attr) is tile.LockedDoor:
-                doors.append(direction)
-            elif type(attr) == tile.LockedDoorWithKeypad:
-                keypad_doors.append(direction)
+        if tileobj is not None:
+            for direction in ['north', 'south', 'east', 'west']:
+                attr = getattr(tileobj, direction)
+                if type(attr) is tile.LockedDoor:
+                    doors.append(direction)
+                elif type(attr) == tile.LockedDoorWithKeypad:
+                    keypad_doors.append(direction)
 
         button.doors = []
         button.keypad_doors = []
