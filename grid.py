@@ -764,7 +764,7 @@ class MapEditorWindow(QtWidgets.QDialog):
             settings.ground_taste_description = tileobj.ground_taste_description
         else:
             tileobj = tile.Tile()
-            settings.tile_id = tile.Tile.tile_id
+            settings.tile_id = "tile%d" % tile.Tile.tile_id
 
         complete = False
         while not complete:
