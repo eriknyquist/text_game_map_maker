@@ -1,5 +1,6 @@
 import sys
 import json
+import zlib
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -21,6 +22,50 @@ keypad_door_colour = QtCore.Qt.blue
 
 button_style = "border:4px solid %s; background-color: None" % tile_border_colour
 start_button_style = "border:4px solid %s; background-color: %s" % (tile_border_colour, start_tile_colour)
+
+_move_map = {
+    'north': (-1, 0),
+    'south': (1, 0),
+    'east': (0, 1),
+    'west': (0, -1),
+}
+
+def position_handler(tileobj, pos):
+    print(tileobj.tile_id, pos)
+
+def getTilePositions(start_tile, callback):
+    positions = {}
+    seen = []
+    pos = (0, 0)
+    tilestack = [(start_tile, None, None)]
+
+    while tilestack:
+        curr, newpos, movedir = tilestack.pop(0)
+        if newpos is not None:
+            pos = newpos
+
+        if curr in seen:
+            continue
+
+        seen.append(curr)
+
+        if movedir is not None:
+            xinc, yinc = _move_map[movedir]
+            oldx, oldy = pos
+            newx, newy = oldx + xinc, oldy + yinc
+            pos = (newx, newy)
+
+        if curr.is_door():
+            curr = curr.replacement_tile
+
+        positions[curr.tile_id] = pos
+
+        for direction in _move_map:
+            n = getattr(curr, direction)
+            if n:
+                tilestack.append((n, pos, direction))
+
+    return positions
 
 def _set_button_style(button, selected=False, start=False, filled=True):
     colour = "background-color: None"
@@ -222,16 +267,16 @@ class MapEditorWindow(QtWidgets.QDialog):
         self.setSelectedPosition(button)
 
     def leftKeyPress(self):
-        self.moveSelection(0, -1)
+        self.moveSelection(*_move_map['west'])
 
     def rightKeyPress(self):
-        self.moveSelection(0, 1)
+        self.moveSelection(*_move_map['east'])
 
     def upKeyPress(self):
-        self.moveSelection(-1, 0)
+        self.moveSelection(*_move_map['north'])
 
     def downKeyPress(self):
-        self.moveSelection(1, 0)
+        self.moveSelection(*_move_map['south'])
 
     def buildToolbar(self):
         self.deleteButton = QtWidgets.QPushButton()
@@ -239,21 +284,21 @@ class MapEditorWindow(QtWidgets.QDialog):
         self.keypadDoorButton = QtWidgets.QPushButton()
         self.saveButton = QtWidgets.QPushButton()
         self.loadButton = QtWidgets.QPushButton()
-        self.exportButton = QtWidgets.QPushButton()
+        self.loadFromSavedGameButton = QtWidgets.QPushButton()
 
         self.deleteButton.setText("Delete tile")
         self.doorButton.setText("Add door")
         self.keypadDoorButton.setText("Add door with keypad")
         self.saveButton.setText("Save to file")
         self.loadButton.setText("Load from file")
-        self.exportButton.setText("Export map")
+        self.loadFromSavedGameButton.setText("Load map from saved game")
 
         self.deleteButton.clicked.connect(self.deleteButtonClicked)
         self.doorButton.clicked.connect(self.doorButtonClicked)
         self.keypadDoorButton.clicked.connect(self.keypadDoorButtonClicked)
         self.saveButton.clicked.connect(self.saveButtonClicked)
         self.loadButton.clicked.connect(self.loadButtonClicked)
-        self.exportButton.clicked.connect(self.exportButtonClicked)
+        self.loadFromSavedGameButton.clicked.connect(self.loadFromSavedGameButtonClicked)
 
         self.startTileCheckBox = QtWidgets.QCheckBox()
         self.startTileCheckBox.setStyleSheet("margin-left:50%; margin-right:50%;")
@@ -283,6 +328,7 @@ class MapEditorWindow(QtWidgets.QDialog):
         self.buttonAreaLayout.addWidget(tileButtonGroup)
         self.buttonAreaLayout.addWidget(self.saveButton)
         self.buttonAreaLayout.addWidget(self.loadButton)
+        self.buttonAreaLayout.addWidget(self.loadFromSavedGameButton)
 
     def clearGrid(self):
         for pos in _tiles:
@@ -318,14 +364,9 @@ class MapEditorWindow(QtWidgets.QDialog):
 
         return attrs
 
-    def deserialize(self, attrs):
-        start_tile = tile.builder(attrs['tile_list'], attrs['start_tile'], obj_version)
-
-        self.clearGrid()
-        _tiles.clear()
-
-        for tile_id in attrs['positions']:
-            pos = tuple(attrs['positions'][tile_id])
+    def drawTileMap(self, start_tile, positions):
+        for tile_id in positions:
+            pos = tuple(positions[tile_id])
             tileobj = tile.get_tile_by_id(tile_id)
             if tileobj is None:
                 continue
@@ -341,30 +382,60 @@ class MapEditorWindow(QtWidgets.QDialog):
 
             self.redrawDoors(button, tileobj)
 
+    def deserialize(self, attrs):
+        start_tile = tile.builder(attrs['tile_list'], attrs['start_tile'], obj_version)
+
+        self.clearGrid()
+        _tiles.clear()
+        self.drawTileMap(start_tile, attrs['positions'])
         self.startTilePosition = tuple(attrs['positions'][start_tile.tile_id])
 
     def deserializeFromSaveFile(self, attrs):
         if (player.TILES_KEY not in attrs) or (player.START_TILE_KEY not in attrs):
             return False
 
+        # Remove items, people and events, we're not dealing with them here
+        tilelist = attrs[player.TILES_KEY]
+        for tiledata in tilelist:
+            for loc in tiledata['items']:
+                tiledata['items'][loc] = []
+
+            for loc in tiledata['people']:
+                tiledata['people'][loc] = []
+
+            del tiledata['enter_event']
+            del tiledata['exit_event']
+
         # build tilemap from list of tile data
-        tilelist = attrs[TILES_KEY]
-        start_tile_name = attrs[START_TILE_KEY]
+        start_tile_name = attrs[player.START_TILE_KEY]
         start_tile = tile.builder(tilelist, start_tile_name, obj_version)
 
         # find lowest index tile in tilemap
-        lowest_tile = self.closestTileToOrigin(start_tile)
+        positions = getTilePositions(start_tile, position_handler)
+        lowest_y = positions[start_tile.tile_id][0]
+        lowest_x = positions[start_tile.tile_id][1]
+
+        for tile_id in positions:
+            pos = positions[tile_id]
+            if (pos[0] < lowest_y):
+                lowest_y = pos[0]
+
+            if (pos[1] < lowest_x):
+                lowest_x = pos[1]
+
+        # Correct tile positions so lowest tile is (0, 0)
+        for tile_id in positions:
+            old = positions[tile_id]
+            positions[tile_id] = (old[0] + abs(lowest_y), old[1] + abs(lowest_x))
+
+        self.clearGrid()
+        _tiles.clear()
+        self.drawTileMap(start_tile, positions)
+        self.startTilePosition = positions[start_tile.tile_id]
 
         return True
 
     def closestTileToOrigin(self, tilemap):
-        movemap = {
-            'north': (0, -1),
-            'south': (0, 1),
-            'east': (1, 0),
-            'west': (-1, 0),
-        }
-
         seen = []
         pos = (0, 0)
         lowest_tile = start_tile
@@ -382,7 +453,7 @@ class MapEditorWindow(QtWidgets.QDialog):
             seen.append(curr)
 
             if movedir is not None:
-                xinc, yinc = movemap[movedir]
+                xinc, yinc = _move_map[movedir]
                 oldx, oldy = pos
                 newx, newy = oldx + xinc, oldy + yinc
                 pos = (newx, newy)
@@ -392,7 +463,7 @@ class MapEditorWindow(QtWidgets.QDialog):
                     lowest_tile_pos = pos
                     lowest_tile = curr
 
-            for direction in movemap:
+            for direction in _move_map:
                 n = getattr(curr, direction)
                 if n:
                     tilestack.append((n, pos, direction))
@@ -444,6 +515,21 @@ class MapEditorWindow(QtWidgets.QDialog):
         opposite_dir = tile.reverse_direction(direction)
         opposite = getattr(opposite_tile, opposite_dir)
         return opposite and opposite.is_door()
+
+    def loadFromSavedGameButtonClicked(self):
+        filedialog = QtWidgets.QFileDialog
+        options = filedialog.Options()
+        options |= filedialog.DontUseNativeDialog
+        filename, _ = filedialog.getOpenFileName(self, "QFileDialog.getOpenFileName()",
+                             "", "All Files (*);;Text Files (*.txt)",
+                                                 options=options)
+
+        with open(filename, 'rb') as fh:
+            data = fh.read()
+            strdata = zlib.decompress(data).decode("utf-8")
+            attrs = json.loads(strdata)
+
+        self.deserializeFromSaveFile(attrs)
 
     def deleteButtonClicked(self):
         if self.selectedPosition not in _tiles:
@@ -559,9 +645,6 @@ class MapEditorWindow(QtWidgets.QDialog):
             attrs = json.load(fh)
 
         self.deserialize(attrs)
-
-    def exportButtonClicked(self):
-        pass
 
     def getButtonPosition(self, button):
         idx = self.gridLayout.indexOf(button)
