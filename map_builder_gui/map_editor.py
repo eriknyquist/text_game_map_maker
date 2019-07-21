@@ -1,9 +1,12 @@
 import os
-import sys
 import json
 import zlib
 
 from PyQt5 import QtWidgets, QtCore, QtGui
+
+import forms
+from door_editor import DoorEditor
+from tile_button import TileButton
 
 from text_game_maker.tile import tile
 from text_game_maker.player import player
@@ -18,8 +21,6 @@ tile_border_pixels = 4
 start_tile_colour = '#6bfa75'
 tile_border_colour = '#000000'
 selected_border_colour = '#ff0000'
-door_colour = QtCore.Qt.black
-keypad_door_colour = QtCore.Qt.blue
 
 button_style = "border:4px solid %s; background-color: None" % tile_border_colour
 start_button_style = "border:4px solid %s; background-color: %s" % (tile_border_colour, start_tile_colour)
@@ -65,7 +66,7 @@ def getTilePositions(start_tile):
 
     return positions
 
-def _set_button_style(button, selected=False, start=False, filled=True):
+def setButtonStyle(button, selected=False, start=False, filled=True):
     colour = "background-color: None"
     border = ""
 
@@ -85,130 +86,11 @@ def _silent_checkbox_set(checkbox, value, handler):
     checkbox.setChecked(value)
     checkbox.stateChanged.connect(handler)
 
-class Button(QtWidgets.QPushButton):
+
+
+class MapEditor(QtWidgets.QDialog):
     def __init__(self, parent=None):
-        super(Button, self).__init__(parent)
-        self.doors = []
-        self.keypad_doors = []
-        self.main = parent
-
-    def eventFilter(self, obj, event):
-        if event.type() == QtCore.QEvent.MouseButtonPress:
-            if event.button() == QtCore.Qt.LeftButton:
-                self.main.onLeftClick(obj)
-            elif event.button() == QtCore.Qt.RightButton:
-                self.main.onRightClick(obj)
-            elif event.button() == QtCore.Qt.MiddleButton:
-                self.main.onMiddleClick(obj)
-
-        elif event.type() == QtCore.QEvent.KeyPress:
-            if event.key() in [QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return]:
-                self.main.onLeftClick(obj)
-
-        return QtCore.QObject.event(obj, event)
-
-    def add_doors(self, doors=[], keypad_doors=[]):
-        self.doors.extend(doors)
-        self.keypad_doors.extend(keypad_doors)
-        self.update()
-
-    def paintEvent(self, event):
-        super(Button, self).paintEvent(event)
-
-        for direction in self.doors:
-            self.draw_door(door_colour, direction)
-
-        for direction in self.keypad_doors:
-            self.draw_door(keypad_door_colour, direction)
-
-    def draw_door(self, colour, direction):
-        width = self.frameGeometry().width()
-        height = self.frameGeometry().height()
-        borderdelta = tile_border_pixels * 2
-
-        qwidth = (width - borderdelta) / 4.0
-        qheight = (height - borderdelta) / 4.0
-
-        adjusted_qheight = qheight + borderdelta
-        adjusted_qwidth = qwidth + borderdelta
-
-        if direction == "north":
-            points = (adjusted_qheight, 0, height - adjusted_qheight, 0)
-        elif direction == "south":
-            points = (adjusted_qheight, width, height - adjusted_qheight, width)
-        if direction == "east":
-            points = (height, adjusted_qwidth, height, width - adjusted_qwidth)
-        if direction == "west":
-            points = (0, adjusted_qwidth, 0, width - adjusted_qwidth)
-
-        self.draw_line(colour, qwidth, *points)
-
-    def draw_line(self, colour, width, x1, y1, x2, y2):
-        painter = QtGui.QPainter(self)
-        painter.setPen(QtGui.QPen(colour, width))
-        brush = QtGui.QBrush()
-        painter.setBrush(brush)
-        painter.drawLine(QtCore.QLine(x1, y1, x2, y2))
-
-class DoorSettings(object):
-    spec = {
-        "direction": {"type": "choice", "choices": ["north", "south", "east", "west"]},
-        "prefix": {"type": "str"},
-        "name": {"type": "str"},
-        "tile_id": {"type": "str", "label": "tile ID"}
-    }
-
-    def __init__(self):
-        self.prefix = ""
-        self.name = ""
-        self.direction = ""
-        self.tile_id = ""
-
-class KeypadDoorSettings(object):
-    spec = {
-        "direction": {"type": "choice", "choices": ["north", "south", "east", "west"]},
-        "prefix": {"type": "str"},
-        "name": {"type": "str"},
-        "tile_id": {"type": "str", "label": "tile ID"},
-        "code": {"type": "int", "label": "keypad code"},
-        "prompt": {"type": "str", "label": "keypad prompt"}
-    }
-
-    def __init__(self):
-        self.prefix = ""
-        self.name = ""
-        self.direction = ""
-        self.tile_id = ""
-        self.code = 0
-        self.prompt = ""
-
-class TileSettings(object):
-    spec = {
-        'description': {'type':'long_str'},
-        'name': {'type': 'str'},
-        'tile_id': {'type': 'str', 'label': 'tile ID'},
-        'first_visit_message': {'type': 'long_str', 'label': 'first visit message'},
-        'first_visit_message_in_dark': {'type': 'bool', 'label': 'show first visit message if dark'},
-        'dark': {'type': 'bool'},
-        'smell_description': {'type': 'str', 'label': 'smell description'},
-        'ground_smell_description': {'type': 'str', 'label': 'ground smell description'},
-        'ground_taste_description': {'type': 'str', 'label': 'ground taste description'}
-    }
-
-    def __init__(self):
-        self.description = ""
-        self.name = ""
-        self.tile_id = ""
-        self.first_visit_message = ""
-        self.first_visit_message_in_dark = True
-        self.dark = False
-        self.smell_description = ""
-        self.ground_smell_description = ""
-        self.ground_taste_description = ""
-
-class MapEditorWindow(QtWidgets.QDialog):
-    def __init__(self, parent=None):
-        super(MapEditorWindow, self).__init__(parent=parent)
+        super(MapEditor, self).__init__(parent=parent)
         self.door_id = 1
         self.resize(500, 400)
         self.mainLayout = QtWidgets.QVBoxLayout(self)
@@ -236,7 +118,7 @@ class MapEditorWindow(QtWidgets.QDialog):
 
         for i in range(self.rows):
             for j in range(self.columns):
-                btn = Button(self)
+                btn = TileButton(self)
                 btn.setAttribute(QtCore.Qt.WA_StyledBackground)
                 btn.setFixedSize(100, 100)
                 btn.installEventFilter(btn)
@@ -339,7 +221,7 @@ class MapEditorWindow(QtWidgets.QDialog):
         for pos in _tiles:
             button = self.gridLayout.itemAtPosition(*pos).widget()
             button.setText("")
-            _set_button_style(button, selected=False, start=False, filled=False)
+            setButtonStyle(button, selected=False, start=False, filled=False)
 
     def yesNoDialog(self, header="", msg="Are you sure?"):
         reply = QtWidgets.QMessageBox.question(self, header, msg,
@@ -381,7 +263,7 @@ class MapEditorWindow(QtWidgets.QDialog):
             button.setText(tileobj.tile_id)
 
             is_start = tileobj is start_tile
-            _set_button_style(button, selected=False, start=is_start, filled=True)
+            setButtonStyle(button, selected=False, start=is_start, filled=True)
             self.redrawDoors(button, tileobj)
 
     def deserialize(self, attrs):
@@ -399,14 +281,14 @@ class MapEditorWindow(QtWidgets.QDialog):
         # Remove items, people and events, we're not dealing with them here
         tilelist = attrs[player.TILES_KEY]
         for tiledata in tilelist:
-            for loc in tiledata['items']:
-                tiledata['items'][loc] = []
+            for loc in tiledata[tile.ITEMS_KEY]:
+                tiledata[tile.ITEMS_KEY][loc] = []
 
-            for loc in tiledata['people']:
-                tiledata['people'][loc] = []
+            for loc in tiledata[tile.PEOPLE_KEY]:
+                tiledata[tile.PEOPLE_KEY][loc] = []
 
-            del tiledata['enter_event']
-            del tiledata['exit_event']
+            del tiledata[tile.ENTER_EVENT_KEY]
+            del tiledata[tile.EXIT_EVENT_KEY]
 
         # build tilemap from list of tile data
         start_tile_name = attrs[player.START_TILE_KEY]
@@ -477,10 +359,10 @@ class MapEditorWindow(QtWidgets.QDialog):
             if self.startTilePosition is not None:
                 # Set current start tile colour back to default
                 old_start = self.gridLayout.itemAtPosition(*self.startTilePosition).widget()
-                _set_button_style(old_start, selected=False, start=False, filled=True)
+                setButtonStyle(old_start, selected=False, start=False, filled=True)
 
             new_start = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
-            _set_button_style(new_start, selected=True, start=True, filled=True)
+            setButtonStyle(new_start, selected=True, start=True, filled=True)
             self.startTilePosition = self.selectedPosition
             self.startTileCheckBox.setEnabled(False)
 
@@ -569,11 +451,19 @@ class MapEditorWindow(QtWidgets.QDialog):
         if self.startTilePosition == self.selectedPosition:
             self.startTilePosition = None
 
-        _set_button_style(button, selected=False, start=False, filled=False)
+        setButtonStyle(button, selected=False, start=False, filled=False)
         self.redrawDoors(button, None)
 
     def doorButtonClicked(self):
-        settings = DoorSettings()
+        tileobj = _tiles[self.selectedPosition]
+        button = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
+
+        doors_dialog = DoorEditor(self, tileobj)
+        doors_dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+        doors_dialog.exec_()
+
+    def _old_doorButtonClicked(self):
+        settings = forms.DoorSettings()
         wasAccepted = self.getDoorSettings(settings, "Door settings")
         if not wasAccepted:
             return
@@ -597,7 +487,7 @@ class MapEditorWindow(QtWidgets.QDialog):
         button.add_doors(doors=[settings.direction])
 
     def keypadDoorButtonClicked(self):
-        settings = KeypadDoorSettings()
+        settings = forms.KeypadDoorSettings()
         wasAccepted = self.getDoorSettings(settings, "Keypad door settings")
         if not wasAccepted:
             return
@@ -712,13 +602,13 @@ class MapEditorWindow(QtWidgets.QDialog):
             oldstart = self.selectedPosition == self.startTilePosition
             oldfilled = self.selectedPosition in _tiles
             oldbutton = self.gridLayout.itemAtPosition(*self.selectedPosition).widget()
-            _set_button_style(oldbutton, selected=False, start=oldstart, filled=oldfilled)
+            setButtonStyle(oldbutton, selected=False, start=oldstart, filled=oldfilled)
 
         self.selectedPosition = self.getButtonPosition(button)
 
         newstart = self.selectedPosition == self.startTilePosition
         newfilled = self.selectedPosition in _tiles
-        _set_button_style(button, selected=True, start=newstart, filled=newfilled)
+        setButtonStyle(button, selected=True, start=newstart, filled=newfilled)
 
         if self.selectedPosition == self.startTilePosition:
             _silent_checkbox_set(self.startTileCheckBox, True, self.onStartTileSet)
@@ -746,7 +636,7 @@ class MapEditorWindow(QtWidgets.QDialog):
         self.setSelectedPosition(button)
 
     def runTileBuilderDialog(self, position):
-        settings = TileSettings()
+        settings = forms.TileSettings()
 
         if position in _tiles:
             tileobj = _tiles[position]
@@ -846,15 +736,9 @@ class MapEditorWindow(QtWidgets.QDialog):
         if position not in _tiles:
             # Created a new tile
             _tiles[position] = tileobj
-            _set_button_style(button, selected=True, start=False, filled=True)
+            setButtonStyle(button, selected=True, start=False, filled=True)
             self.connectSurroundingTiles(tileobj, position)
 
         button.setText(str(tileobj.tile_id))
         self.setSelectedPosition(button)
-
-if __name__ == '__main__':
-    app = QtWidgets.QApplication(sys.argv)
-    w = MapEditorWindow()
-    w.show()
-    sys.exit(app.exec_())
 
