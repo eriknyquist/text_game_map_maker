@@ -31,10 +31,7 @@ _move_map = {
     'west': (0, -1),
 }
 
-def position_handler(tileobj, pos):
-    print(tileobj.tile_id, pos)
-
-def getTilePositions(start_tile, callback):
+def getTilePositions(start_tile):
     positions = {}
     seen = []
     pos = (0, 0)
@@ -416,7 +413,7 @@ class MapEditorWindow(QtWidgets.QDialog):
         start_tile = tile.builder(tilelist, start_tile_name, obj_version)
 
         # find lowest index tile in tilemap
-        positions = getTilePositions(start_tile, position_handler)
+        positions = getTilePositions(start_tile)
         lowest_y = positions[start_tile.tile_id][0]
         lowest_x = positions[start_tile.tile_id][1]
 
