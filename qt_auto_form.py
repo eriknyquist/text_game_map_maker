@@ -15,17 +15,41 @@ def _double_spin_box():
     return w
 
 _input_decoders = {
-    'str': (lambda x: x.text(), lambda x, y: x.setText(y), lambda: QLineEdit()),
-    'long_str': (lambda x: x.toPlainText(), lambda x, y: x.insertPlainText(y), lambda: QPlainTextEdit()),
-    'int': (lambda x: x.value(), lambda x, y: x.setValue(y), _spin_box),
-    'float': (lambda x: x.value(), lambda x, y: x.setValue(y), _double_spin_box),
-    'bool': (lambda x: x.isChecked(), lambda x, y: x.setChecked(y), lambda: QCheckBox()),
-    'choice': (lambda x: x.currentText(), lambda x, y: None, lambda: QComboBox())
+    'str': (
+        lambda x: x.text(),
+        lambda x, y: x.setText(y),
+        lambda: QLineEdit(),
+        ''),
+    'long_str': (
+        lambda x: x.toPlainText(),
+        lambda x, y: x.insertPlainText(y),
+        lambda: QPlainTextEdit(),
+        ''),
+    'int': (
+        lambda x: x.value(),
+        lambda x, y: x.setValue(y),
+        _spin_box,
+        0),
+    'float': (
+        lambda x: x.value(),
+        lambda x, y: x.setValue(y),
+        _double_spin_box,
+        0.0),
+    'bool': (
+        lambda x: x.isChecked(),
+        lambda x, y: x.setChecked(y),
+        lambda: QCheckBox(),
+        False),
+    'choice': (
+        lambda x: x.currentText(),
+        lambda x, y: None,
+        lambda: QComboBox(),
+        '')
 }
 
 class InputWidget(object):
     def __init__(self, instance, attr, typename, value_getter, value_setter,
-                 widget_getter, label):
+                 widget_getter, default_value, label):
         self.instance = instance
         self.attr = attr
         self.typename = typename
@@ -33,12 +57,15 @@ class InputWidget(object):
         self.value_setter = value_setter
         self.widget = widget_getter()
         self.label = QLabel("%s:" % label)
+        self.default_value = default_value
 
         if typename == 'long_str':
             self.widget.setTabChangesFocus(True)
 
     def setInstanceValue(self):
         value = self.value_getter(self.widget)
+        if value == self.default_value:
+            return
 
         try:
             cast_value = eval(self.typename)(value)
@@ -54,13 +81,15 @@ class InputWidget(object):
             return
 
         value = getattr(self.instance, self.attr)
-
-        try:
-            cast_value = eval(self.typename)(value)
-        except Exception:
-            value = str(value)
+        if value is None:
+            value = self.default_value
         else:
-            value = cast_value
+            try:
+                cast_value = eval(self.typename)(value)
+            except Exception:
+                value = str(value)
+            else:
+                value = cast_value
 
         self.value_setter(self.widget, value)
 
@@ -83,10 +112,10 @@ def getInputWidgetForAttr(instance, attrname, spec):
         if "label" in attrs:
             label = attrs["label"]
 
-    value_getter, value_setter, widget_getter = _input_decoders[typename]
+    value_getter, value_setter, widget_getter, default = _input_decoders[typename]
 
     widget = InputWidget(instance, attrname, typename, value_getter, value_setter,
-                         widget_getter, label)
+                         widget_getter, default, label)
 
     if widget.typename == "choice":
         if "choices" in attrs:
