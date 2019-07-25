@@ -244,8 +244,9 @@ class MapEditor(QtWidgets.QDialog):
         attrs = {}
         start_tile = _tiles[self.startTilePosition]
 
-        attrs['tile_list'] = tile.crawler(start_tile)
-        attrs['start_tile'] = start_tile.tile_id
+        attrs[player.OBJECT_VERSION_KEY] = obj_version
+        attrs[player.TILES_KEY] = tile.crawler(start_tile)
+        attrs[player.START_TILE_KEY] = start_tile.tile_id
         attrs['positions'] = {_tiles[pos].tile_id: list(pos) for pos in _tiles}
 
         return attrs
@@ -266,7 +267,9 @@ class MapEditor(QtWidgets.QDialog):
             self.redrawDoors(button, tileobj)
 
     def deserialize(self, attrs):
-        start_tile = tile.builder(attrs['tile_list'], attrs['start_tile'], obj_version)
+        start_tile = tile.builder(attrs[player.TILES_KEY],
+                                  attrs[player.START_TILE_KEY],
+                                  attrs[player.OBJECT_VERSION_KEY])
 
         self.clearGrid()
         _tiles.clear()
