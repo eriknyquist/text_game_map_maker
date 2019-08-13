@@ -105,9 +105,9 @@ class DoorEditor(QtWidgets.QDialog):
         button = self.main.buttonAtPosition(*self.main.selectedPosition)
 
         if doortype == tile.LockedDoor:
-            button.add_doors(doors=[settings.direction])
+            button.addDoors(doors=[settings.direction])
         else:
-            button.add_doors(keypad_doors=[settings.direction])
+            button.addDoors(keypad_doors=[settings.direction])
 
         setattr(self.tile, direction, doorobj)
         self.addRow(doorobj, direction)
@@ -143,9 +143,9 @@ class DoorEditor(QtWidgets.QDialog):
         button = self.main.buttonAtPosition(*self.main.selectedPosition)
 
         if type(new_doorobj) == tile.LockedDoor:
-            button.add_doors(doors=[settings.direction])
+            button.addDoors(doors=[settings.direction])
         else:
-            button.add_doors(keypad_doors=[settings.direction])
+            button.addDoors(keypad_doors=[settings.direction])
 
         if new_direction != direction:
             setattr(self.tile, new_direction, doorobj)
@@ -165,7 +165,7 @@ class DoorEditor(QtWidgets.QDialog):
             return
 
         button = self.main.buttonAtPosition(*self.main.selectedPosition)
-        button.remove_doors([direction])
+        button.removeDoors([direction])
         del self.directions[direction]
         setattr(self.tile, direction, doorobj.replacement_tile)
         self.table.removeRow(selectedRow)

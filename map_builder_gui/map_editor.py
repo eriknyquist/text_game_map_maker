@@ -17,14 +17,6 @@ from qt_auto_form import QtAutoForm
 
 _tiles = {}
 
-tile_border_pixels = 4
-start_tile_colour = '#6bfa75'
-tile_border_colour = '#000000'
-selected_border_colour = '#ff0000'
-
-button_style = "border:4px solid %s; background-color: None" % tile_border_colour
-start_button_style = "border:4px solid %s; background-color: %s" % (tile_border_colour, start_tile_colour)
-
 _move_map = {
     'north': (-1, 0),
     'south': (1, 0),
@@ -66,26 +58,11 @@ def getTilePositions(start_tile):
 
     return positions
 
-def setButtonStyle(button, selected=False, start=False, filled=True):
-    colour = "background-color: None"
-    border = ""
-
-    if selected:
-        border = "border:%dpx solid %s" % (tile_border_pixels, selected_border_colour)
-    elif filled:
-        border = "border:%dpx solid %s" % (tile_border_pixels, tile_border_colour)
-
-    if start:
-        colour = "background-color: %s" % start_tile_colour
-
-    button.setStyleSheet(';'.join([border, colour]))
-
 # Set checkbox state without triggering the stateChanged signal
 def _silent_checkbox_set(checkbox, value, handler):
     checkbox.stateChanged.disconnect(handler)
     checkbox.setChecked(value)
     checkbox.stateChanged.connect(handler)
-
 
 
 class MapEditor(QtWidgets.QDialog):
@@ -219,8 +196,8 @@ class MapEditor(QtWidgets.QDialog):
         for pos in _tiles:
             button = self.buttonAtPosition(*pos)
             button.setText("")
-            button.clear_doors()
-            setButtonStyle(button, selected=False, start=False, filled=False)
+            button.clearDoors()
+            button.setStyle(selected=False, start=False)
 
     def yesNoDialog(self, header="", msg="Are you sure?"):
         reply = QtWidgets.QMessageBox.question(self, header, msg,
@@ -263,8 +240,8 @@ class MapEditor(QtWidgets.QDialog):
             button.setText(tileobj.tile_id)
 
             is_start = tileobj is start_tile
-            setButtonStyle(button, selected=False, start=is_start, filled=True)
-            self.redrawDoors(button, tileobj)
+            button.setStyle(selected=False, start=is_start)
+            button.redrawDoors()
 
     def deserialize(self, attrs):
         start_tile = tile.builder(attrs[player.TILES_KEY],
@@ -364,10 +341,10 @@ class MapEditor(QtWidgets.QDialog):
             if self.startTilePosition is not None:
                 # Set current start tile colour back to default
                 old_start = self.buttonAtPosition(*self.startTilePosition)
-                setButtonStyle(old_start, selected=False, start=False, filled=True)
+                old_start.setStyle(selected=False, start=False)
 
             new_start = self.buttonAtPosition(*self.selectedPosition)
-            setButtonStyle(new_start, selected=True, start=True, filled=True)
+            new_start.setStyle(selected=True, start=True)
             self.startTilePosition = self.selectedPosition
             self.startTileCheckBox.setEnabled(False)
 
@@ -424,8 +401,8 @@ class MapEditor(QtWidgets.QDialog):
         if self.startTilePosition == self.selectedPosition:
             self.startTilePosition = None
 
-        setButtonStyle(button, selected=False, start=False, filled=False)
-        self.redrawDoors(button, None)
+        button.setStyle(selected=False, start=False)
+        button.redrawDoors()
 
     def doorButtonClicked(self):
         tileobj = _tiles[self.selectedPosition]
@@ -434,21 +411,6 @@ class MapEditor(QtWidgets.QDialog):
         doors_dialog = DoorEditor(self, tileobj)
         doors_dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         doors_dialog.exec_()
-
-    def redrawDoors(self, button, tileobj):
-        doors = []
-        keypad_doors = []
-
-        if tileobj is not None:
-            for direction in ['north', 'south', 'east', 'west']:
-                attr = getattr(tileobj, direction)
-                if type(attr) is tile.LockedDoor:
-                    doors.append(direction)
-                elif type(attr) == tile.LockedDoorWithKeypad:
-                    keypad_doors.append(direction)
-
-        button.clear_doors()
-        button.add_doors(doors, keypad_doors)
 
     def saveButtonClicked(self):
         if self.startTilePosition is None:
@@ -495,7 +457,14 @@ class MapEditor(QtWidgets.QDialog):
         idx = self.gridLayout.indexOf(button)
         return self.gridLayout.getItemPosition(idx)[:2]
 
-    def surroundingTiles(self, position):
+    def tileAtPosition(self, y, x):
+        pos = (y, x)
+        if pos not in _tiles:
+            return None
+
+        return _tiles[pos]
+
+    def surroundingTilePositions(self, position):
         def _fetch_tile(pos, yoff, xoff):
             oldy, oldx = pos
             newy = oldy + yoff
@@ -508,7 +477,7 @@ class MapEditor(QtWidgets.QDialog):
             if newpos not in _tiles:
                 return None
 
-            return _tiles[newpos]
+            return newpos
 
         north = _fetch_tile(position, -1, 0)
         south = _fetch_tile(position, 1, 0)
@@ -520,15 +489,14 @@ class MapEditor(QtWidgets.QDialog):
     def setSelectedPosition(self, button):
         if self.selectedPosition is not None:
             oldstart = self.selectedPosition == self.startTilePosition
-            oldfilled = self.selectedPosition in _tiles
             oldbutton = self.buttonAtPosition(*self.selectedPosition)
-            setButtonStyle(oldbutton, selected=False, start=oldstart, filled=oldfilled)
+            oldbutton.setStyle(selected=False, start=oldstart)
 
         self.selectedPosition = self.getButtonPosition(button)
 
         newstart = self.selectedPosition == self.startTilePosition
         newfilled = self.selectedPosition in _tiles
-        setButtonStyle(button, selected=True, start=newstart, filled=newfilled)
+        button.setStyle(selected=True, start=newstart)
 
         if self.selectedPosition == self.startTilePosition:
             _silent_checkbox_set(self.startTileCheckBox, True, self.onStartTileSet)
@@ -606,16 +574,21 @@ class MapEditor(QtWidgets.QDialog):
         return tileobj
 
     def disconnectSurroundingTiles(self, tileobj, position):
-        north, south, east, west = self.surroundingTiles(position)
+        north, south, east, west = self.surroundingTilePositions(position)
         adjacent_tiles = {'north': north, 'south': south, 'east': east, 'west': west}
 
         for direction in adjacent_tiles:
-            adjacent_tileobj = adjacent_tiles[direction]
+            adjacent_tilepos = adjacent_tiles[direction]
 
-            if not adjacent_tileobj:
+            if not adjacent_tilepos:
                 continue
 
+            adjacent_tileobj = self.tileAtPosition(*adjacent_tilepos)
             setattr(tileobj, direction, None)
+
+            # re-draw the tile we just disconnected from
+            button = self.buttonAtPosition(*adjacent_tilepos)
+            button.update()
 
             reverse_direction = tile.reverse_direction(direction)
             reverse_pointer = getattr(adjacent_tileobj, reverse_direction)
@@ -626,16 +599,21 @@ class MapEditor(QtWidgets.QDialog):
                 setattr(adjacent_tileobj, tile.reverse_direction(direction), None)
 
     def connectSurroundingTiles(self, tileobj, position):
-        north, south, east, west = self.surroundingTiles(position)
+        north, south, east, west = self.surroundingTilePositions(position)
         adjacent_tiles = {'north': north, 'south': south, 'east': east, 'west': west}
 
         for direction in adjacent_tiles:
-            adjacent_tileobj = adjacent_tiles[direction]
+            adjacent_tilepos = adjacent_tiles[direction]
 
-            if not adjacent_tileobj:
+            if not adjacent_tilepos:
                 continue
 
+            adjacent_tileobj = self.tileAtPosition(*adjacent_tilepos)
             setattr(tileobj, direction, adjacent_tileobj)
+
+            # re-draw the tile we just connected to
+            button = self.buttonAtPosition(*adjacent_tilepos)
+            button.update()
 
             reverse_direction = tile.reverse_direction(direction)
             reverse_pointer = getattr(adjacent_tileobj, reverse_direction)
@@ -657,7 +635,7 @@ class MapEditor(QtWidgets.QDialog):
         if position not in _tiles:
             # Created a new tile
             _tiles[position] = tileobj
-            setButtonStyle(button, selected=True, start=False, filled=True)
+            button.setStyle(selected=True, start=False)
             self.connectSurroundingTiles(tileobj, position)
 
         button.setText(str(tileobj.tile_id))

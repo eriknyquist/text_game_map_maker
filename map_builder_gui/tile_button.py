@@ -1,9 +1,24 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-import map_editor
+from text_game_maker.tile import tile
 
 door_colour = QtCore.Qt.black
+wall_colour = QtCore.Qt.black
+selected_wall_colour = QtCore.Qt.red
 keypad_door_colour = QtCore.Qt.blue
+
+tile_border_pixels = 4
+start_tile_colour = '#6bfa75'
+tile_border_colour = '#000000'
+selected_border_colour = '#ff0000'
+
+button_style = "border:4px solid %s; background-color: None" % tile_border_colour
+start_button_style = "border:4px solid %s; background-color: %s" % (tile_border_colour, start_tile_colour)
+
+class BorderType(object):
+    SELECTED = 0
+    FILLED = 1
+    EMPTY = 2
 
 class TileButton(QtWidgets.QPushButton):
     def __init__(self, parent=None):
@@ -11,6 +26,30 @@ class TileButton(QtWidgets.QPushButton):
         self.doors = []
         self.keypad_doors = []
         self.main = parent
+        self.border_type = BorderType.EMPTY
+
+    def setStyle(self, selected=False, start=False):
+        border = ""
+        bordercolour = selected_wall_colour if selected else wall_colour
+
+        if start:
+            colour = "background-color: %s" % start_tile_colour
+        else:
+            colour = "background-color: None"
+
+        self.setStyleSheet(colour)
+
+        pos = self.main.getButtonPosition(self)
+        tileobj = self.main.tileAtPosition(*pos)
+
+        if selected:
+            self.border_type = BorderType.SELECTED
+        elif tileobj is None:
+            self.border_type = BorderType.EMPTY
+        else:
+            self.border_type = BorderType.FILLED
+
+        self.update()
 
     def eventFilter(self, obj, event):
         if event.type() == QtCore.QEvent.MouseButtonPress:
@@ -27,12 +66,12 @@ class TileButton(QtWidgets.QPushButton):
 
         return QtCore.QObject.event(obj, event)
 
-    def clear_doors(self):
+    def clearDoors(self):
         self.doors = []
         self.keypad_doors = []
         self.update()
 
-    def remove_doors(self, directions=[]):
+    def removeDoors(self, directions=[]):
         for d in directions:
             if d in self.doors:
                 self.doors.remove(d)
@@ -42,7 +81,7 @@ class TileButton(QtWidgets.QPushButton):
 
         self.update()
 
-    def add_doors(self, doors=[], keypad_doors=[]):
+    def addDoors(self, doors=[], keypad_doors=[]):
         self.doors.extend(doors)
         self.keypad_doors.extend(keypad_doors)
         self.update()
@@ -51,15 +90,55 @@ class TileButton(QtWidgets.QPushButton):
         super(TileButton, self).paintEvent(event)
 
         for direction in self.doors:
-            self.draw_door(door_colour, direction)
+            self.drawDoor(door_colour, direction)
 
         for direction in self.keypad_doors:
-            self.draw_door(keypad_door_colour, direction)
+            self.drawDoor(keypad_door_colour, direction)
 
-    def draw_door(self, colour, direction):
+        if self.border_type == BorderType.SELECTED:
+            self.drawBorder(selected_wall_colour)
+        elif self.border_type == BorderType.FILLED:
+            self.drawWalls()
+
+    def drawBorder(self, colour):
         width = self.frameGeometry().width()
         height = self.frameGeometry().height()
-        borderdelta = map_editor.tile_border_pixels * 2
+        linewidth = max(2, width / 16)
+
+        lines = [
+            (0, width, 0, 0),
+            (height, width, height, 0),
+            (height, 0, 0, 0),
+            (height, width, 0, width)
+        ]
+
+        for points in lines:
+            self.drawLine(colour, linewidth, *points)
+
+    def drawWalls(self):
+        width = self.frameGeometry().width()
+        height = self.frameGeometry().height()
+        linewidth = max(2, width / 16)
+
+        dirmap = {
+            "north": (0, 0, height, 0),
+            "south": (0, width, height, width),
+            "east": (height, 0, height, width),
+            "west": (0, 0, 0, width)
+        }
+
+        pos = self.main.getButtonPosition(self)
+        tileobj = self.main.tileAtPosition(*pos)
+
+        for direction in dirmap:
+            adjacent = getattr(tileobj, direction)
+            if (adjacent is None) or adjacent.is_door():
+                self.drawLine(wall_colour, linewidth, *dirmap[direction])
+
+    def drawDoor(self, colour, direction):
+        width = self.frameGeometry().width()
+        height = self.frameGeometry().height()
+        borderdelta = tile_border_pixels * 2
 
         qwidth = (width - borderdelta) / 4.0
         qheight = (height - borderdelta) / 4.0
@@ -67,21 +146,36 @@ class TileButton(QtWidgets.QPushButton):
         adjusted_qheight = qheight + borderdelta
         adjusted_qwidth = qwidth + borderdelta
 
-        if direction == "north":
-            points = (adjusted_qheight, 0, height - adjusted_qheight, 0)
-        elif direction == "south":
-            points = (adjusted_qheight, width, height - adjusted_qheight, width)
-        if direction == "east":
-            points = (height, adjusted_qwidth, height, width - adjusted_qwidth)
-        if direction == "west":
-            points = (0, adjusted_qwidth, 0, width - adjusted_qwidth)
+        dirmap = {
+            "north": (adjusted_qheight, 0, height - adjusted_qheight, 0),
+            "south": (adjusted_qheight, width, height - adjusted_qheight, width),
+            "east": (height, adjusted_qwidth, height, width - adjusted_qwidth),
+            "west": (0, adjusted_qwidth, 0, width - adjusted_qwidth)
+        }
 
-        self.draw_line(colour, qwidth, *points)
+        points = dirmap[direction]
+        self.drawLine(colour, qwidth, *points)
 
-    def draw_line(self, colour, width, x1, y1, x2, y2):
+    def redrawDoors(self):
+        doors = []
+        keypad_doors = []
+        pos = self.main.getButtonPosition(self)
+        tileobj = self.main.tileAtPosition(*pos)
+
+        if tileobj is not None:
+            for direction in ['north', 'south', 'east', 'west']:
+                attr = getattr(tileobj, direction)
+                if type(attr) is tile.LockedDoor:
+                    doors.append(direction)
+                elif type(attr) == tile.LockedDoorWithKeypad:
+                    keypad_doors.append(direction)
+
+        self.clearDoors()
+        self.addDoors(doors, keypad_doors)
+
+    def drawLine(self, colour, width, x1, y1, x2, y2):
         painter = QtGui.QPainter(self)
         painter.setPen(QtGui.QPen(colour, width))
         brush = QtGui.QBrush()
         painter.setBrush(brush)
         painter.drawLine(QtCore.QLine(x1, y1, x2, y2))
-
