@@ -109,10 +109,6 @@ class MapEditor(QtWidgets.QDialog):
         QtWidgets.QShortcut(QtGui.QKeySequence("up"), self, self.upKeyPress)
         QtWidgets.QShortcut(QtGui.QKeySequence("down"), self, self.downKeyPress)
 
-        # Set initial selection position
-        button = self.buttonAtPosition(0, 0)
-        self.setSelectedPosition(button)
-
     def moveSelection(self, y_move, x_move):
         if self.selectedPosition is None:
             return
@@ -508,20 +504,19 @@ class MapEditor(QtWidgets.QDialog):
         newfilled = self.selectedPosition in _tiles
         button.setStyle(selected=True, start=newstart)
 
+        filled = self.selectedPosition in _tiles
+
         if self.selectedPosition == self.startTilePosition:
             _silent_checkbox_set(self.startTileCheckBox, True, self.onStartTileSet)
             self.startTileCheckBox.setEnabled(False)
-        else:
+        elif filled:
             self.startTileCheckBox.setEnabled(True)
             _silent_checkbox_set(self.startTileCheckBox, False, self.onStartTileSet)
-
-        filled = self.selectedPosition in _tiles
-
-        if not filled:
+        else:
             _silent_checkbox_set(self.startTileCheckBox, False, self.onStartTileSet)
             self.startTileCheckBox.setEnabled(False)
 
-        for obj in [self.doorButton, self.deleteButton]:
+        for obj in [self.doorButton, self.deleteButton, self.main.editDoorsAction, self.main.deleteTileAction]:
             if obj.isEnabled() != filled:
                 obj.setEnabled(filled)
 
@@ -632,6 +627,12 @@ class MapEditor(QtWidgets.QDialog):
                 reverse_pointer.replacement_tile = tileobj
             else:
                 setattr(adjacent_tileobj, tile.reverse_direction(direction), tileobj)
+
+    def editSelectedTile(self):
+        if self.selectedPosition is None:
+            return
+
+        self.onLeftClick(self.buttonAtPosition(*self.selectedPosition))
 
     def onLeftClick(self, button):
         position = self.getButtonPosition(button)

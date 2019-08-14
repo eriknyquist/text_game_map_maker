@@ -11,39 +11,65 @@ class MainWindow(QtWidgets.QMainWindow):
         self.initUi()
 
     def initUi(self):
-        self.widget = MapEditor(mainWindow=self)
-        self.setCentralWidget(self.widget)
-
         scriptDir = os.path.dirname(os.path.realpath(__file__))
         self.iconPath = os.path.join(scriptDir, 'images', 'logo.png')
         self.setWindowIcon(QtGui.QIcon(self.iconPath))
 
-        openAction = QtWidgets.QAction("Open", self)
-        openAction.setShortcut("Ctrl+O")
-        openAction.setStatusTip("Open saved file")
-        openAction.triggered.connect(self.widget.loadButtonClicked)
+        self.widget = MapEditor(mainWindow=self)
+        self.setCentralWidget(self.widget)
 
-        saveAction = QtWidgets.QAction("Save", self)
-        saveAction.setShortcut("Ctrl+S")
-        saveAction.setStatusTip("Save to file")
-        saveAction.triggered.connect(self.widget.saveButtonClicked)
+        # File menu actions
+        self.openAction = QtWidgets.QAction("Open", self)
+        self.openAction.setShortcut("Ctrl+O")
+        self.openAction.setStatusTip("Open saved file")
+        self.openAction.triggered.connect(self.widget.loadButtonClicked)
 
-        saveAsAction = QtWidgets.QAction("Save As", self)
-        saveAsAction.setShortcut("Ctrl+A")
-        saveAsAction.setStatusTip("Save to file, always pick the file first")
-        saveAsAction.triggered.connect(self.widget.saveAsButtonClicked)
+        self.saveAction = QtWidgets.QAction("Save", self)
+        self.saveAction.setShortcut("Ctrl+S")
+        self.saveAction.setStatusTip("Save to file")
+        self.saveAction.triggered.connect(self.widget.saveButtonClicked)
 
-        loadGameAction = QtWidgets.QAction("Load map from saved game file", self)
-        loadGameAction.setShortcut("Ctrl+G")
-        loadGameAction.setStatusTip("Load the map data from saved game file")
-        loadGameAction.triggered.connect(self.widget.loadFromSavedGameButtonClicked)
+        self.saveAsAction = QtWidgets.QAction("Save As", self)
+        self.saveAsAction.setShortcut("Ctrl+A")
+        self.saveAsAction.setStatusTip("Save to file, always pick the file first")
+        self.saveAsAction.triggered.connect(self.widget.saveAsButtonClicked)
 
+        self.loadGameAction = QtWidgets.QAction("Load map from saved game file", self)
+        self.loadGameAction.setShortcut("Ctrl+G")
+        self.loadGameAction.setStatusTip("Load the map data from saved game file")
+        self.loadGameAction.triggered.connect(self.widget.loadFromSavedGameButtonClicked)
+
+        # Edit menu actions
+        self.editTileAction = QtWidgets.QAction("Edit selected tile", self)
+        self.editTileAction.setShortcut("Ctrl+E")
+        self.editTileAction.setStatusTip("Set/change attributes for selected tile")
+        self.editTileAction.triggered.connect(self.widget.editSelectedTile)
+
+        self.editDoorsAction = QtWidgets.QAction("Edit doors on selected tile", self)
+        self.editDoorsAction.setShortcut("Ctrl+D")
+        self.editDoorsAction.setStatusTip("Add/edit doors on selected tile")
+        self.editDoorsAction.triggered.connect(self.widget.doorButtonClicked)
+
+        self.deleteTileAction = QtWidgets.QAction("Delete selected tile", self)
+        self.deleteTileAction.setShortcut("Ctrl+R")
+        self.deleteTileAction.setStatusTip("Delete selected tile")
+        self.deleteTileAction.triggered.connect(self.widget.deleteButtonClicked)
+
+        # Build menu bar
         menu = self.menuBar()
         fileMenu = menu.addMenu("File")
-        fileMenu.addAction(openAction)
-        fileMenu.addAction(saveAction)
-        fileMenu.addAction(saveAsAction)
-        fileMenu.addAction(loadGameAction)
+        fileMenu.addAction(self.openAction)
+        fileMenu.addAction(self.saveAction)
+        fileMenu.addAction(self.saveAsAction)
+        fileMenu.addAction(self.loadGameAction)
+
+        editMenu = menu.addMenu("Edit")
+        editMenu.addAction(self.editTileAction)
+        editMenu.addAction(self.deleteTileAction)
+        editMenu.addAction(self.editDoorsAction)
+
+        # Set initial selection position
+        self.widget.setSelectedPosition(self.widget.buttonAtPosition(0, 0))
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
