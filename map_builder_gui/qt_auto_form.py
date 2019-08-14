@@ -61,7 +61,7 @@ _input_decoders = {
 
 class InputWidget(object):
     def __init__(self, instance, attr, typename, value_getter, value_setter,
-                 widget_getter, default_value, label):
+                 widget_getter, default_value, label, tooltip=None):
         self.instance = instance
         self.attr = attr
         self.typename = typename
@@ -70,6 +70,10 @@ class InputWidget(object):
         self.widget = widget_getter()
         self.label = QLabel("%s:" % label)
         self.default_value = default_value
+
+        if tooltip is not None:
+            self.widget.setToolTip(tooltip)
+            self.label.setToolTip(tooltip)
 
     def setInstanceValue(self):
         value = self.value_getter(self.widget)
@@ -106,6 +110,7 @@ class InputWidget(object):
 def getInputWidgetForAttr(instance, attrname, spec):
     typename = 'str'
     label = attrname
+    tooltip = None
     attrs = {}
 
     if (spec is None) or (attrname not in spec):
@@ -118,11 +123,13 @@ def getInputWidgetForAttr(instance, attrname, spec):
             typename = attrs["type"]
         if "label" in attrs:
             label = attrs["label"]
+        if "tooltip" in attrs:
+            tooltip = attrs["tooltip"]
 
     value_getter, value_setter, widget_getter, default = _input_decoders[typename]
 
     widget = InputWidget(instance, attrname, typename, value_getter, value_setter,
-                         widget_getter, default, label)
+                         widget_getter, default, label, tooltip)
 
     if widget.typename == "choice":
         if "choices" in attrs:
