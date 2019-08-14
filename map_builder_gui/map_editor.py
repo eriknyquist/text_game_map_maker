@@ -69,6 +69,7 @@ class MapEditor(QtWidgets.QDialog):
     def __init__(self, mainWindow=None):
         super(MapEditor, self).__init__()
         self.main = mainWindow
+        self.loaded_file = None
 
         self.resize(500, 400)
         self.mainLayout = QtWidgets.QVBoxLayout(self)
@@ -411,6 +412,12 @@ class MapEditor(QtWidgets.QDialog):
         doors_dialog.exec_()
 
     def saveButtonClicked(self):
+        if self.loaded_file is None:
+            self.saveAsButtonClicked()
+        else:
+            self.saveToFile(self.loaded_file)
+
+    def saveAsButtonClicked(self):
         if self.startTilePosition is None:
             self.errorDialog("Unable to save map", "No start tile is set. You "
                              "must set a start tile before saving.")
@@ -423,6 +430,9 @@ class MapEditor(QtWidgets.QDialog):
                              "", "All Files (*);;Text Files (*.txt)",
                                                  options=options)
 
+        self.saveToFile(filename)
+
+    def saveToFile(self, filename):
         with open(filename, 'w') as fh:
             json.dump(self.serialize(), fh)
 
@@ -450,6 +460,8 @@ class MapEditor(QtWidgets.QDialog):
             self.errorDialog("Error loading saved map data",
                              "Unable to load saved map data from file %s: %s"
                              % (filename, str(e)))
+
+        self.loaded_file = filename
 
     def getButtonPosition(self, button):
         idx = self.gridLayout.indexOf(button)

@@ -28,6 +28,11 @@ class MainWindow(QtWidgets.QMainWindow):
         saveAction.setStatusTip("Save to file")
         saveAction.triggered.connect(self.widget.saveButtonClicked)
 
+        saveAsAction = QtWidgets.QAction("Save As", self)
+        saveAsAction.setShortcut("Ctrl+A")
+        saveAsAction.setStatusTip("Save to file, always pick the file first")
+        saveAsAction.triggered.connect(self.widget.saveAsButtonClicked)
+
         loadGameAction = QtWidgets.QAction("Load map from saved game file", self)
         loadGameAction.setShortcut("Ctrl+G")
         loadGameAction.setStatusTip("Load the map data from saved game file")
@@ -37,6 +42,7 @@ class MainWindow(QtWidgets.QMainWindow):
         fileMenu = menu.addMenu("File")
         fileMenu.addAction(openAction)
         fileMenu.addAction(saveAction)
+        fileMenu.addAction(saveAsAction)
         fileMenu.addAction(loadGameAction)
 
 if __name__ == '__main__':
