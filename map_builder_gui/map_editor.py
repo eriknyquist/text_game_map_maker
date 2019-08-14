@@ -174,12 +174,19 @@ class MapEditor(QtWidgets.QDialog):
         tileButtonLayout.addWidget(self.doorButton)
         tileButtonLayout.addLayout(checkBoxLayout)
         tileButtonGroup = QtWidgets.QGroupBox("Edit selected tile")
+        tileButtonGroup.setAlignment(QtCore.Qt.AlignCenter)
         tileButtonGroup.setLayout(tileButtonLayout)
 
+        fileButtonLayout = QtWidgets.QHBoxLayout()
+        fileButtonLayout.addWidget(self.saveButton)
+        fileButtonLayout.addWidget(self.loadButton)
+        fileButtonLayout.addWidget(self.loadFromSavedGameButton)
+        fileButtonGroup = QtWidgets.QGroupBox("Load/save file")
+        fileButtonGroup.setAlignment(QtCore.Qt.AlignCenter)
+        fileButtonGroup.setLayout(fileButtonLayout)
+
         self.buttonAreaLayout.addWidget(tileButtonGroup)
-        self.buttonAreaLayout.addWidget(self.saveButton)
-        self.buttonAreaLayout.addWidget(self.loadButton)
-        self.buttonAreaLayout.addWidget(self.loadFromSavedGameButton)
+        self.buttonAreaLayout.addWidget(fileButtonGroup)
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
