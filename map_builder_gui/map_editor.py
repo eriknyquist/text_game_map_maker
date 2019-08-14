@@ -66,11 +66,9 @@ def _silent_checkbox_set(checkbox, value, handler):
 
 
 class MapEditor(QtWidgets.QDialog):
-    def __init__(self, parent=None):
-        super(MapEditor, self).__init__(parent=parent)
-        scriptDir = os.path.dirname(os.path.realpath(__file__))
-        self.iconPath = os.path.join(scriptDir, 'images', 'logo.png')
-        self.setWindowIcon(QtGui.QIcon(self.iconPath))
+    def __init__(self, mainWindow=None):
+        super(MapEditor, self).__init__()
+        self.main = mainWindow
 
         self.resize(500, 400)
         self.mainLayout = QtWidgets.QVBoxLayout(self)
@@ -190,7 +188,7 @@ class MapEditor(QtWidgets.QDialog):
         if event.key() == QtCore.Qt.Key_Escape:
             reply = self.yesNoDialog("Are you sure?", "Are you sure you want to quit?")
             if reply:
-                self.close()
+                QtWidgets.qApp.quit()
 
     def clearGrid(self):
         for pos in _tiles:
@@ -356,7 +354,7 @@ class MapEditor(QtWidgets.QDialog):
         filedialog = QtWidgets.QFileDialog
         options = filedialog.Options()
         options |= filedialog.DontUseNativeDialog
-        filename, _ = filedialog.getOpenFileName(self, "QFileDialog.getOpenFileName()",
+        filename, _ = filedialog.getOpenFileName(self, "Select saved game file to load",
                              "", "All Files (*);;Text Files (*.txt)",
                                                  options=options)
 
@@ -421,7 +419,7 @@ class MapEditor(QtWidgets.QDialog):
         filedialog = QtWidgets.QFileDialog
         options = filedialog.Options()
         options |= filedialog.DontUseNativeDialog
-        filename, _ = filedialog.getSaveFileName(self, "QFileDialog.getSaveFileName()",
+        filename, _ = filedialog.getSaveFileName(self, "Select save file",
                              "", "All Files (*);;Text Files (*.txt)",
                                                  options=options)
 
@@ -432,7 +430,7 @@ class MapEditor(QtWidgets.QDialog):
         filedialog = QtWidgets.QFileDialog
         options = filedialog.Options()
         options |= filedialog.DontUseNativeDialog
-        filename, _ = filedialog.getOpenFileName(self, "QFileDialog.getOpenFileName()",
+        filename, _ = filedialog.getOpenFileName(self, "Select file to open",
                              "", "All Files (*);;Text Files (*.txt)",
                                                  options=options)
 
@@ -545,7 +543,7 @@ class MapEditor(QtWidgets.QDialog):
         while not complete:
             dialog = QtAutoForm(settings, title="Tile attributes", spec=settings.spec)
             dialog.setWindowModality(QtCore.Qt.ApplicationModal)
-            dialog.setWindowIcon(QtGui.QIcon(self.iconPath))
+            dialog.setWindowIcon(QtGui.QIcon(self.main.iconPath))
             dialog.exec_()
 
             if not dialog.wasAccepted():
