@@ -133,7 +133,10 @@ class TileButton(QtWidgets.QPushButton):
         tileobj = self.main.tileAtPosition(*pos)
 
         for direction in dirmap:
-            adjacent = getattr(tileobj, direction)
+            adjacent = None
+            if tileobj is not None:
+                adjacent = getattr(tileobj, direction)
+
             if (adjacent is None) or adjacent.is_door():
                 self.drawLine(wall_colour, linewidth, *dirmap[direction])
 
