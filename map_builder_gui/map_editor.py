@@ -4,16 +4,15 @@ import zlib
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-import forms
-from door_editor import DoorEditor
-from tile_button import TileButton
+from map_builder_gui import forms
+from map_builder_gui.door_editor import DoorEditor
+from map_builder_gui.tile_button import TileButton
+from map_builder_gui.qt_auto_form import QtAutoForm
 
 from text_game_maker.tile import tile
 from text_game_maker.player import player
 from text_game_maker.game_objects.base import serialize, deserialize
 from text_game_maker.game_objects import __object_model_version__ as obj_version
-
-from qt_auto_form import QtAutoForm
 
 _tiles = {}
 
@@ -23,6 +22,7 @@ _move_map = {
     'east': (0, 1),
     'west': (0, -1)
 }
+
 
 def getTilePositions(start_tile):
     positions = {}

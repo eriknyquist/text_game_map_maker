@@ -1,8 +1,9 @@
-import forms
-from qt_auto_form import QtAutoForm
+from map_builder_gui import forms
+from map_builder_gui.qt_auto_form import QtAutoForm
 
 from text_game_maker.tile import tile
 from PyQt5 import QtWidgets, QtCore, QtGui
+
 
 class DoorEditor(QtWidgets.QDialog):
     def __init__(self, parent, tileobj):

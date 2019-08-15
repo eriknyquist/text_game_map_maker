@@ -1,9 +1,29 @@
 import sys
 import os
 
-from map_editor import MapEditor
+from map_builder_gui.map_editor import MapEditor
 
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets, QtGui, QtCore
+
+from map_builder_gui import __maintainer__ as package_author
+from map_builder_gui import __email__ as author_email
+from map_builder_gui import __name__ as package_name
+from map_builder_gui import __version__ as package_version
+
+
+class TextDisplayWindow(QtWidgets.QDialog):
+    def __init__(self, title, text):
+        super(TextDisplayWindow, self).__init__()
+
+        self.setMinimumSize(QtCore.QSize(440, 240))
+        self.setWindowTitle(title)
+
+        self.mainLayout = QtWidgets.QVBoxLayout(self)
+        self.textField = QtWidgets.QPlainTextEdit(self)
+        self.textField.insertPlainText(text)
+        self.textField.setReadOnly(True)
+
+        self.mainLayout.addWidget(self.textField)
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -55,6 +75,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.deleteTileAction.setStatusTip("Delete selected tile")
         self.deleteTileAction.triggered.connect(self.widget.deleteButtonClicked)
 
+        # Help menu actions
+        self.aboutAction = QtWidgets.QAction("About", self)
+        self.aboutAction.triggered.connect(self.showAboutWindow)
+
         # Build menu bar
         menu = self.menuBar()
         fileMenu = menu.addMenu("File")
@@ -68,8 +92,24 @@ class MainWindow(QtWidgets.QMainWindow):
         editMenu.addAction(self.deleteTileAction)
         editMenu.addAction(self.editDoorsAction)
 
+        helpMenu = menu.addMenu("Help")
+        helpMenu.addAction(self.aboutAction)
+
         # Set initial selection position
         self.widget.setSelectedPosition(self.widget.buttonAtPosition(0, 0))
+
+    def showAboutWindow(self):
+        lines = [
+            "%s is a tool for creating maps that can be loaded and" % package_name,
+            "used with the text_game_maker package.\n",
+            "text_game_maker: https://github.com/eriknyquist/text_game_maker\n",
+            "author: %s (%s)\n" % (package_author, author_email),
+            "version: %s" % (package_version)
+        ]
+
+        msgBox = TextDisplayWindow("About", "\n".join(lines))
+        msgBox.setWindowIcon(QtGui.QIcon(self.iconPath))
+        msgBox.exec_()
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

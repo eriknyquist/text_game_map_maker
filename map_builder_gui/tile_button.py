@@ -15,10 +15,12 @@ selected_border_colour = '#ff0000'
 button_style = "border:4px solid %s; background-color: None" % tile_border_colour
 start_button_style = "border:4px solid %s; background-color: %s" % (tile_border_colour, start_tile_colour)
 
+
 class BorderType(object):
     SELECTED = 0
     FILLED = 1
     EMPTY = 2
+
 
 class TileButton(QtWidgets.QPushButton):
     def __init__(self, parent=None):
