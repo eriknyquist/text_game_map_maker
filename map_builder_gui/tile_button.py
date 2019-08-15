@@ -30,6 +30,48 @@ class TileButton(QtWidgets.QPushButton):
         self.main = parent
         self.border_type = BorderType.EMPTY
 
+        # Will be set by calculate_dimensions
+        self.doorwidth = None
+        self.borderwidth = None
+        self.border_lines = None
+        self.walls_map = None
+        self.doors_map = None
+
+    def calculate_dimensions(self):
+        width = self.frameGeometry().width()
+        height = self.frameGeometry().height()
+        borderdelta = tile_border_pixels * 2
+
+        qwidth = (width - borderdelta) / 4.0
+        qheight = (height - borderdelta) / 4.0
+
+        adjusted_qheight = qheight + borderdelta
+        adjusted_qwidth = qwidth + borderdelta
+
+        self.doorwidth = qwidth
+        self.borderwidth = max(2, width / 16)
+
+        self.border_lines = [
+            (0, width, 0, 0),
+            (height, width, height, 0),
+            (height, 0, 0, 0),
+            (height, width, 0, width)
+        ]
+
+        self.walls_map = {
+            "north": (0, 0, height, 0),
+            "south": (0, width, height, width),
+            "east": (height, 0, height, width),
+            "west": (0, 0, 0, width)
+        }
+
+        self.doors_map = {
+            "north": (adjusted_qheight, 0, height - adjusted_qheight, 0),
+            "south": (adjusted_qheight, width, height - adjusted_qheight, width),
+            "east": (height, adjusted_qwidth, height, width - adjusted_qwidth),
+            "west": (0, adjusted_qwidth, 0, width - adjusted_qwidth)
+        }
+
     def setStyle(self, selected=False, start=False):
         border = ""
         bordercolour = selected_wall_colour if selected else wall_colour
@@ -103,63 +145,24 @@ class TileButton(QtWidgets.QPushButton):
             self.drawWalls()
 
     def drawBorder(self, colour):
-        width = self.frameGeometry().width()
-        height = self.frameGeometry().height()
-        linewidth = max(2, width / 16)
-
-        lines = [
-            (0, width, 0, 0),
-            (height, width, height, 0),
-            (height, 0, 0, 0),
-            (height, width, 0, width)
-        ]
-
-        for points in lines:
-            self.drawLine(colour, linewidth, *points)
+        for points in self.border_lines:
+            self.drawLine(colour, self.borderwidth, *points)
 
     def drawWalls(self):
-        width = self.frameGeometry().width()
-        height = self.frameGeometry().height()
-        linewidth = max(2, width / 16)
-
-        dirmap = {
-            "north": (0, 0, height, 0),
-            "south": (0, width, height, width),
-            "east": (height, 0, height, width),
-            "west": (0, 0, 0, width)
-        }
-
         pos = self.main.getButtonPosition(self)
         tileobj = self.main.tileAtPosition(*pos)
 
-        for direction in dirmap:
+        for direction in self.walls_map:
             adjacent = None
             if tileobj is not None:
                 adjacent = getattr(tileobj, direction)
 
             if (adjacent is None) or adjacent.is_door():
-                self.drawLine(wall_colour, linewidth, *dirmap[direction])
+                self.drawLine(wall_colour, self.borderwidth, *self.walls_map[direction])
 
     def drawDoor(self, colour, direction):
-        width = self.frameGeometry().width()
-        height = self.frameGeometry().height()
-        borderdelta = tile_border_pixels * 2
-
-        qwidth = (width - borderdelta) / 4.0
-        qheight = (height - borderdelta) / 4.0
-
-        adjusted_qheight = qheight + borderdelta
-        adjusted_qwidth = qwidth + borderdelta
-
-        dirmap = {
-            "north": (adjusted_qheight, 0, height - adjusted_qheight, 0),
-            "south": (adjusted_qheight, width, height - adjusted_qheight, width),
-            "east": (height, adjusted_qwidth, height, width - adjusted_qwidth),
-            "west": (0, adjusted_qwidth, 0, width - adjusted_qwidth)
-        }
-
-        points = dirmap[direction]
-        self.drawLine(colour, qwidth, *points)
+        points = self.doors_map[direction]
+        self.drawLine(colour, self.doorwidth, *points)
 
     def redrawDoors(self):
         doors = []

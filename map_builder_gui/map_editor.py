@@ -100,6 +100,7 @@ class MapEditor(QtWidgets.QDialog):
                 btn = TileButton(self)
                 btn.setAttribute(QtCore.Qt.WA_StyledBackground)
                 btn.setFixedSize(100, 100)
+                btn.calculate_dimensions()
                 btn.installEventFilter(btn)
                 self.gridLayout.addWidget(btn, i, j)
 
