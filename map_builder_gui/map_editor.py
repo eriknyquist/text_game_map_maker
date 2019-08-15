@@ -6,7 +6,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 
 from map_builder_gui import forms
 from map_builder_gui.door_editor import DoorEditor
-from map_builder_gui.tile_button import TileButton
+from map_builder_gui import tile_button
 from map_builder_gui.qt_auto_form import QtAutoForm
 
 from text_game_maker.tile import tile
@@ -97,7 +97,7 @@ class MapEditor(QtWidgets.QDialog):
 
         for i in range(self.rows):
             for j in range(self.columns):
-                btn = TileButton(self)
+                btn = tile_button.TileButton(self)
                 btn.setAttribute(QtCore.Qt.WA_StyledBackground)
                 btn.setFixedSize(100, 100)
                 btn.calculate_dimensions()
@@ -137,18 +137,21 @@ class MapEditor(QtWidgets.QDialog):
 
     def buildToolbar(self):
         self.deleteButton = QtWidgets.QPushButton()
+        self.clearButton = QtWidgets.QPushButton()
         self.doorButton = QtWidgets.QPushButton()
         self.saveButton = QtWidgets.QPushButton()
         self.loadButton = QtWidgets.QPushButton()
         self.loadFromSavedGameButton = QtWidgets.QPushButton()
 
         self.deleteButton.setText("Delete tile")
+        self.clearButton.setText("Clear all tiles")
         self.doorButton.setText("Edit doors")
         self.saveButton.setText("Save to file")
         self.loadButton.setText("Load from file")
         self.loadFromSavedGameButton.setText("Load map from saved game")
 
         self.deleteButton.clicked.connect(self.deleteButtonClicked)
+        self.clearButton.clicked.connect(self.clearButtonClicked)
         self.doorButton.clicked.connect(self.doorButtonClicked)
         self.saveButton.clicked.connect(self.saveButtonClicked)
         self.loadButton.clicked.connect(self.loadButtonClicked)
@@ -168,10 +171,12 @@ class MapEditor(QtWidgets.QDialog):
         checkBoxLayout.setAlignment(QtCore.Qt.AlignCenter)
 
         self.doorButton.setEnabled(False)
+        self.clearButton.setEnabled(False)
         self.deleteButton.setEnabled(False)
 
         tileButtonLayout = QtWidgets.QHBoxLayout()
         tileButtonLayout.addWidget(self.deleteButton)
+        tileButtonLayout.addWidget(self.clearButton)
         tileButtonLayout.addWidget(self.doorButton)
         tileButtonLayout.addLayout(checkBoxLayout)
         tileButtonGroup = QtWidgets.QGroupBox("Edit selected tile")
@@ -195,12 +200,21 @@ class MapEditor(QtWidgets.QDialog):
             if reply:
                 QtWidgets.qApp.quit()
 
-    def clearGrid(self):
-        for pos in _tiles:
+    def clearAllTiles(self):
+        for pos in list(_tiles.keys()):
             button = self.buttonAtPosition(*pos)
             button.setText("")
             button.clearDoors()
+            del _tiles[pos]
             button.setStyle(selected=False, start=False)
+
+        if self.selectedPosition:
+            pos = self.selectedPosition
+        else:
+            pos = (0, 0)
+
+        self.buttonAtPosition(*pos)
+        self.setSelectedPosition(button)
 
     def yesNoDialog(self, header="", msg="Are you sure?"):
         reply = QtWidgets.QMessageBox.question(self, header, msg,
@@ -251,8 +265,7 @@ class MapEditor(QtWidgets.QDialog):
                                   attrs[player.START_TILE_KEY],
                                   attrs[player.OBJECT_VERSION_KEY])
 
-        self.clearGrid()
-        _tiles.clear()
+        self.clearAllTiles()
         self.drawTileMap(start_tile, attrs['positions'])
         self.startTilePosition = tuple(attrs['positions'][start_tile.tile_id])
 
@@ -294,8 +307,7 @@ class MapEditor(QtWidgets.QDialog):
             old = positions[tile_id]
             positions[tile_id] = (old[0] + abs(lowest_y), old[1] + abs(lowest_x))
 
-        self.clearGrid()
-        _tiles.clear()
+        self.clearAllTiles()
         self.drawTileMap(start_tile, positions)
         self.startTilePosition = positions[start_tile.tile_id]
 
@@ -407,6 +419,21 @@ class MapEditor(QtWidgets.QDialog):
         button.setStyle(selected=False, start=False)
         button.redrawDoors()
 
+        # Did we delete the last tile?
+        if not _tiles:
+            self.clearButton.setEnabled(False)
+            self.setSelectedPosition(button)
+
+    def clearButtonClicked(self):
+        reply = self.yesNoDialog("Really clear all tiles?", "Are you sure you "
+                                 "want to clear all tiles? you will lose any unsaved data.")
+
+        if not reply:
+            return
+
+        self.clearAllTiles()
+        self.clearButton.setEnabled(False)
+
     def doorButtonClicked(self):
         tileobj = _tiles[self.selectedPosition]
         button = self.buttonAtPosition(*self.selectedPosition)
@@ -466,6 +493,8 @@ class MapEditor(QtWidgets.QDialog):
                              % (filename, str(e)))
 
         self.loaded_file = filename
+        if _tiles:
+            self.clearButton.setEnabled(True)
 
     def getButtonPosition(self, button):
         idx = self.gridLayout.indexOf(button)
@@ -643,6 +672,7 @@ class MapEditor(QtWidgets.QDialog):
         self.onLeftClick(self.buttonAtPosition(*self.selectedPosition))
 
     def onLeftClick(self, button):
+        is_first_tile = (not _tiles)
         position = self.getButtonPosition(button)
         tileobj = self.runTileBuilderDialog(position)
 
@@ -660,3 +690,5 @@ class MapEditor(QtWidgets.QDialog):
         button.setText(str(tileobj.tile_id))
         self.setSelectedPosition(button)
 
+        if is_first_tile:
+            self.clearButton.setEnabled(True)
