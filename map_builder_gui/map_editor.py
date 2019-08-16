@@ -1,6 +1,7 @@
 import os
 import json
 import zlib
+import traceback
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -213,8 +214,7 @@ class MapEditor(QtWidgets.QDialog):
         else:
             pos = (0, 0)
 
-        self.buttonAtPosition(*pos)
-        self.setSelectedPosition(button)
+        self.setSelectedPosition(self.buttonAtPosition(*pos))
 
     def yesNoDialog(self, header="", msg="Are you sure?"):
         reply = QtWidgets.QMessageBox.question(self, header, msg,
@@ -489,8 +489,8 @@ class MapEditor(QtWidgets.QDialog):
             self.deserialize(attrs)
         except Exception as e:
             self.errorDialog("Error loading saved map data",
-                             "Unable to load saved map data from file %s: %s"
-                             % (filename, str(e)))
+                             "Unable to load saved map data from file %s:\n\n%s"
+                             % (filename, traceback.format_exc()))
 
         self.loaded_file = filename
         if _tiles:
