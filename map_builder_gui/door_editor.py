@@ -10,7 +10,7 @@ class DoorEditor(QtWidgets.QDialog):
         super(DoorEditor, self).__init__(parent=parent)
 
         self.door_id = 1
-        self.main = parent
+        self.parent = parent
         self.tile = tileobj
         self.directions = {}
 
@@ -91,19 +91,19 @@ class DoorEditor(QtWidgets.QDialog):
         if doorobj is None:
             return
 
-        if self.main.tileIDExists(doorobj.tile_id):
-            self.main.errorDialog("Unable to create door",
+        if self.parent.tileIDExists(doorobj.tile_id):
+            self.parent.errorDialog("Unable to create door",
                                   "Tile ID '%s' is already is use!"
                                     % doorobj.tile_id)
             return
 
         if direction in self.directions:
-            self.main.errorDialog("Unable to create door",
+            self.parent.errorDialog("Unable to create door",
                                   "There is already a door to the %s" % direction)
             return
 
         self.directions[direction] = doorobj
-        button = self.main.buttonAtPosition(*self.main.selectedPosition)
+        button = self.parent.buttonAtPosition(*self.parent.selectedPosition)
 
         if doortype == tile.LockedDoor:
             button.addDoors(doors=[settings.direction])
@@ -112,6 +112,9 @@ class DoorEditor(QtWidgets.QDialog):
 
         setattr(self.tile, direction, doorobj)
         self.addRow(doorobj, direction)
+
+        # Enabling saving if it was disabled
+        self.parent.setSaveEnabled(True)
 
     def editButtonClicked(self):
         selectedRow = self.table.currentRow()
@@ -133,15 +136,15 @@ class DoorEditor(QtWidgets.QDialog):
         old_tile_id = doorobj.tile_id if doorobj else None
 
         if old_tile_id != new_doorobj.tile_id:
-            if self.main.tileIDExists(new_doorobj.tile_id):
-                self.main.errorDialog("Unable to create door",
+            if self.parent.tileIDExists(new_doorobj.tile_id):
+                self.parent.errorDialog("Unable to change door settings",
                                       "Tile ID '%s' is already is use!"
                                         % new_doorobj.tile_id)
 
             new_doorobj.set_tile_id(new_doorobj.tile_id)
             return
 
-        button = self.main.buttonAtPosition(*self.main.selectedPosition)
+        button = self.parent.buttonAtPosition(*self.parent.selectedPosition)
 
         if type(new_doorobj) == tile.LockedDoor:
             button.addDoors(doors=[settings.direction])
@@ -151,6 +154,9 @@ class DoorEditor(QtWidgets.QDialog):
         if new_direction != direction:
             setattr(self.tile, new_direction, doorobj)
 
+        # Enabling saving if it was disabled
+        self.parent.setSaveEnabled(True)
+
     def deleteButtonClicked(self):
         selectedRow = self.table.currentRow()
         if selectedRow < 0:
@@ -159,13 +165,13 @@ class DoorEditor(QtWidgets.QDialog):
         direction = self.table.item(selectedRow, 2).text()
         doorobj = getattr(self.tile, direction)
 
-        reply = self.main.yesNoDialog("Really delete door?",
+        reply = self.parent.yesNoDialog("Really delete door?",
                                       "Are you sure you want do delete this "
                                       "door (%s)?" % doorobj.tile_id)
         if not reply:
             return
 
-        button = self.main.buttonAtPosition(*self.main.selectedPosition)
+        button = self.parent.buttonAtPosition(*self.parent.selectedPosition)
         button.removeDoors([direction])
         del self.directions[direction]
         setattr(self.tile, direction, doorobj.replacement_tile)
@@ -194,7 +200,7 @@ class DoorEditor(QtWidgets.QDialog):
         while not complete:
             dialog = QtAutoForm(settings_obj, title=window_title, spec=settings_obj.spec)
             dialog.setWindowModality(QtCore.Qt.ApplicationModal)
-            dialog.setWindowIcon(QtGui.QIcon(self.main.iconPath))
+            dialog.setWindowIcon(QtGui.QIcon(self.parent.main.iconPath))
             dialog.exec_()
 
             # Dialog was cancelled, we're done
@@ -202,7 +208,7 @@ class DoorEditor(QtWidgets.QDialog):
                 return False
 
             if str(settings_obj.tile_id).strip() == '':
-                self.main.errorDialog("Invalid tile ID", "tile ID field cannot be empty")
+                self.parent.errorDialog("Invalid tile ID", "tile ID field cannot be empty")
 
             else:
                 complete = True

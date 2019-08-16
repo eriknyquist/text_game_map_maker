@@ -98,6 +98,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # Set initial selection position
         self.widget.setSelectedPosition(self.widget.buttonAtPosition(0, 0))
 
+        # Saving is disabled initially
+        self.widget.setSaveEnabled(False)
+
     def showAboutWindow(self):
         lines = [
             "%s is a tool for creating maps that can be loaded and" % package_name,

@@ -71,6 +71,7 @@ class MapEditor(QtWidgets.QDialog):
         super(MapEditor, self).__init__()
         self.main = mainWindow
         self.loaded_file = None
+        self.save_enabled = True
 
         self.resize(500, 400)
         self.mainLayout = QtWidgets.QVBoxLayout(self)
@@ -200,6 +201,15 @@ class MapEditor(QtWidgets.QDialog):
             reply = self.yesNoDialog("Are you sure?", "Are you sure you want to quit?")
             if reply:
                 QtWidgets.qApp.quit()
+
+    def setSaveEnabled(self, value):
+        if value == self.save_enabled:
+            return
+
+        self.saveButton.setEnabled(value)
+        self.main.saveAction.setEnabled(value)
+        self.main.saveAsAction.setEnabled(value)
+        self.save_enabled = value
 
     def clearAllTiles(self):
         for pos in list(_tiles.keys()):
@@ -362,6 +372,7 @@ class MapEditor(QtWidgets.QDialog):
             new_start.setStyle(selected=True, start=True)
             self.startTilePosition = self.selectedPosition
             self.startTileCheckBox.setEnabled(False)
+            self.setSaveEnabled(True)
 
     def tileIDExists(self, tile_id):
         val = tile.get_tile_by_id(tile_id)
@@ -420,7 +431,11 @@ class MapEditor(QtWidgets.QDialog):
         button.redrawDoors()
 
         # Did we delete the last tile?
-        if not _tiles:
+        if _tiles:
+            # If not, enable saving to file (if it was disabled)
+            self.main.setSaveEnabled(True)
+        else:
+            # If yes, disable button for clearing all tiles
             self.clearButton.setEnabled(False)
             self.setSelectedPosition(button)
 
@@ -461,11 +476,17 @@ class MapEditor(QtWidgets.QDialog):
                              "", "All Files (*);;Text Files (*.txt)",
                                                  options=options)
 
+        # Cancelled?
+        if filename.strip() == "":
+            return
+
         self.saveToFile(filename)
 
     def saveToFile(self, filename):
         with open(filename, 'w') as fh:
             json.dump(self.serialize(), fh)
+
+        self.setSaveEnabled(False)
 
     def loadButtonClicked(self):
         filedialog = QtWidgets.QFileDialog
@@ -495,6 +516,8 @@ class MapEditor(QtWidgets.QDialog):
         self.loaded_file = filename
         if _tiles:
             self.clearButton.setEnabled(True)
+
+        self.setSaveEnabled(False)
 
     def getButtonPosition(self, button):
         idx = self.gridLayout.indexOf(button)
@@ -692,3 +715,5 @@ class MapEditor(QtWidgets.QDialog):
 
         if is_first_tile:
             self.clearButton.setEnabled(True)
+
+        self.setSaveEnabled(True)
