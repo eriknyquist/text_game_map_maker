@@ -1,14 +1,14 @@
 import sys
 import os
 
-from map_builder_gui.map_editor import MapEditor
+from text_game_map_maker.map_editor import MapEditor
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-from map_builder_gui import __maintainer__ as package_author
-from map_builder_gui import __email__ as author_email
-from map_builder_gui import __name__ as package_name
-from map_builder_gui import __version__ as package_version
+from text_game_map_maker import __maintainer__ as package_author
+from text_game_map_maker import __email__ as author_email
+from text_game_map_maker import __name__ as package_name
+from text_game_map_maker import __version__ as package_version
 
 
 class TextDisplayWindow(QtWidgets.QDialog):

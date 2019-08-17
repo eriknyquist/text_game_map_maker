@@ -1,5 +1,5 @@
-from map_builder_gui import forms
-from map_builder_gui.qt_auto_form import QtAutoForm
+from text_game_map_maker import forms
+from text_game_map_maker.qt_auto_form import QtAutoForm
 
 from text_game_maker.tile import tile
 from PyQt5 import QtWidgets, QtCore, QtGui

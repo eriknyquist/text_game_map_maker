@@ -5,10 +5,10 @@ import traceback
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-from map_builder_gui import forms
-from map_builder_gui.door_editor import DoorEditor
-from map_builder_gui import tile_button
-from map_builder_gui.qt_auto_form import QtAutoForm
+from text_game_map_maker import forms
+from text_game_map_maker.door_editor import DoorEditor
+from text_game_map_maker import tile_button
+from text_game_map_maker.qt_auto_form import QtAutoForm
 
 from text_game_maker.tile import tile
 from text_game_maker.player import player
