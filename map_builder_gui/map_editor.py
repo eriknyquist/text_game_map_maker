@@ -208,7 +208,6 @@ class MapEditor(QtWidgets.QDialog):
 
         self.saveButton.setEnabled(value)
         self.main.saveAction.setEnabled(value)
-        self.main.saveAsAction.setEnabled(value)
         self.save_enabled = value
 
     def clearAllTiles(self):
@@ -286,12 +285,8 @@ class MapEditor(QtWidgets.QDialog):
         # Remove items, people and events, we're not dealing with them here
         tilelist = attrs[player.TILES_KEY]
         for tiledata in tilelist:
-            for loc in tiledata[tile.ITEMS_KEY]:
-                tiledata[tile.ITEMS_KEY][loc] = []
-
-            for loc in tiledata[tile.PEOPLE_KEY]:
-                tiledata[tile.PEOPLE_KEY][loc] = []
-
+            del tiledata[tile.ITEMS_KEY]
+            del tiledata[tile.PEOPLE_KEY]
             del tiledata[tile.ENTER_EVENT_KEY]
             del tiledata[tile.EXIT_EVENT_KEY]
 
@@ -433,7 +428,7 @@ class MapEditor(QtWidgets.QDialog):
         # Did we delete the last tile?
         if _tiles:
             # If not, enable saving to file (if it was disabled)
-            self.main.setSaveEnabled(True)
+            self.setSaveEnabled(True)
         else:
             # If yes, disable button for clearing all tiles
             self.clearButton.setEnabled(False)
