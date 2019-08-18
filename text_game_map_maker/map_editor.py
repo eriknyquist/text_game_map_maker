@@ -15,6 +15,14 @@ from text_game_maker.player import player
 from text_game_maker.game_objects.base import serialize, deserialize
 from text_game_maker.game_objects import __object_model_version__ as obj_version
 
+NUM_BUTTON_ROWS = 50
+NUM_BUTTON_COLUMNS = 50
+
+DEFAULT_WINDOW_WIDTH = 500
+DEFAULT_WINDOW_HEIGHT = 400
+
+NUM_BUTTONS_PER_SCREEN_HEIGHT = 5.0
+
 _tiles = {}
 
 _move_map = {
@@ -67,13 +75,18 @@ def _silent_checkbox_set(checkbox, value, handler):
 
 
 class MapEditor(QtWidgets.QDialog):
-    def __init__(self, mainWindow=None):
+    def __init__(self, primaryScreen, mainWindow):
         super(MapEditor, self).__init__()
         self.main = mainWindow
+        self.primary_screen = primaryScreen
         self.loaded_file = None
         self.save_enabled = True
 
-        self.resize(500, 400)
+        screensize = self.primary_screen.size()
+        self.screen_width = screensize.width()
+        self.screen_height = screensize.height()
+
+        self.resize(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT)
         self.mainLayout = QtWidgets.QVBoxLayout(self)
         self.gridAreaLayout = QtWidgets.QHBoxLayout()
         self.buttonAreaLayout = QtWidgets.QHBoxLayout()
@@ -94,14 +107,16 @@ class MapEditor(QtWidgets.QDialog):
         self.selectedPosition = None
         self.startTilePosition = None
 
-        self.rows = 100
-        self.columns = 100
+        self.rows = NUM_BUTTON_ROWS
+        self.columns = NUM_BUTTON_COLUMNS
+
+        button_size = int(self.screen_height / NUM_BUTTONS_PER_SCREEN_HEIGHT)
 
         for i in range(self.rows):
             for j in range(self.columns):
                 btn = tile_button.TileButton(self)
                 btn.setAttribute(QtCore.Qt.WA_StyledBackground)
-                btn.setFixedSize(100, 100)
+                btn.setFixedSize(button_size, button_size)
                 btn.calculate_dimensions()
                 btn.installEventFilter(btn)
                 self.gridLayout.addWidget(btn, i, j)
@@ -119,7 +134,8 @@ class MapEditor(QtWidgets.QDialog):
         y, x = self.selectedPosition
         newpos = (y + y_move, x + x_move)
 
-        if (newpos[0] < 0) or newpos[1] < 0:
+        if ((newpos[0] < 0) or (newpos[0] >= self.columns) or
+            (newpos[1] < 0) or (newpos[1] >= self.rows)):
             return
 
         button = self.buttonAtPosition(*newpos)
@@ -319,7 +335,11 @@ class MapEditor(QtWidgets.QDialog):
         return True
 
     def buttonAtPosition(self, y, x):
-        return self.gridLayout.itemAtPosition(y, x).widget()
+        item = self.gridLayout.itemAtPosition(y, x)
+        if item is None:
+            return None
+
+        return item.widget()
 
     def closestTileToOrigin(self, tilemap):
         seen = []

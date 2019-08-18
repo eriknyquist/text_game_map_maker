@@ -26,8 +26,10 @@ class TextDisplayWindow(QtWidgets.QDialog):
         self.mainLayout.addWidget(self.textField)
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self):
+    def __init__(self, primary_screen):
         super(MainWindow, self).__init__()
+
+        self.primary_screen = primary_screen
         self.initUi()
 
     def initUi(self):
@@ -35,7 +37,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.iconPath = os.path.join(scriptDir, 'images', 'logo.png')
         self.setWindowIcon(QtGui.QIcon(self.iconPath))
 
-        self.widget = MapEditor(mainWindow=self)
+        self.widget = MapEditor(self.primary_screen, self)
         self.setCentralWidget(self.widget)
 
         # File menu actions
@@ -116,7 +118,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    win = MainWindow()
+    win = MainWindow(app.primaryScreen())
     win.show()
     sys.exit(app.exec_())
 
