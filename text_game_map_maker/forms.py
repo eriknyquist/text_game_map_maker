@@ -1,4 +1,13 @@
-class DoorSettings(object):
+class AutoFormSettings(object):
+    def __init__(self):
+        if not hasattr(self, "spec"):
+            raise RuntimeError("%s instance has no 'spec' attribute"
+                               % self.__class__.__name__)
+
+        for attrname in self.spec.keys():
+            setattr(self, attrname, None)
+
+class DoorSettings(AutoFormSettings):
     spec = {
         "direction": {"type": "choice", "choices": ["north", "south", "east", "west"]},
         "prefix": {"type": "str"},
@@ -6,13 +15,7 @@ class DoorSettings(object):
         "tile_id": {"type": "str", "label": "tile ID"}
     }
 
-    def __init__(self):
-        self.prefix = ""
-        self.name = ""
-        self.direction = ""
-        self.tile_id = ""
-
-class KeypadDoorSettings(object):
+class KeypadDoorSettings(AutoFormSettings):
     spec = {
         "direction": {"type": "choice", "choices": ["north", "south", "east", "west"]},
         "prefix": {"type": "str"},
@@ -22,15 +25,7 @@ class KeypadDoorSettings(object):
         "prompt": {"type": "str", "label": "keypad prompt"}
     }
 
-    def __init__(self):
-        self.prefix = ""
-        self.name = ""
-        self.direction = ""
-        self.tile_id = ""
-        self.code = 0
-        self.prompt = ""
-
-class TileSettings(object):
+class TileSettings(AutoFormSettings):
     spec = {
         'description': {'type':'long_str'},
         'name': {'type': 'str'},
@@ -42,15 +37,3 @@ class TileSettings(object):
         'ground_smell_description': {'type': 'str', 'label': 'ground smell description'},
         'ground_taste_description': {'type': 'str', 'label': 'ground taste description'}
     }
-
-    def __init__(self):
-        self.description = ""
-        self.name = ""
-        self.tile_id = ""
-        self.first_visit_message = ""
-        self.first_visit_message_in_dark = True
-        self.dark = False
-        self.smell_description = ""
-        self.ground_smell_description = ""
-        self.ground_taste_description = ""
-

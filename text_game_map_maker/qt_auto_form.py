@@ -182,7 +182,13 @@ class QtAutoForm(QDialog):
 
             input_widget = getInputWidgetForAttr(instance, attrname, self.spec)
 
-            input_widget.setWidgetValue(instance.__dict__[attrname])
+            attrvalue = instance.__dict__[attrname]
+            if attrvalue is None:
+                widgetvalue = input_widget.default_value
+            else:
+                widgetvalue = attrvalue
+
+            input_widget.setWidgetValue(widgetvalue)
             layout.addRow(*input_widget.rowItems())
             self.widgets.append(input_widget)
 
