@@ -32,9 +32,7 @@ class DoorEditor(QtWidgets.QDialog):
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
 
-        for direction in self.directions:
-            self.addRow(self.directions[direction], direction)
-
+        self.populateTable()
         self.table.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
 
         buttonBox = QtWidgets.QDialogButtonBox(
@@ -67,6 +65,11 @@ class DoorEditor(QtWidgets.QDialog):
 
         self.setLayout(mainLayout)
         self.setWindowTitle("Door Editor")
+
+    def populateTable(self):
+        self.table.setRowCount(0)
+        for direction in self.directions:
+            self.addRow(self.directions[direction], direction)
 
     def getSelectedDirection(self, rowNumber):
         door_id = self.table.item(rowNumber, 0).text()
@@ -110,6 +113,9 @@ class DoorEditor(QtWidgets.QDialog):
         else:
             button.addDoors(keypad_doors=[settings.direction])
 
+        # Re-draw button
+        button.update()
+
         setattr(self.tile, direction, doorobj)
         self.addRow(doorobj, direction)
 
@@ -138,7 +144,7 @@ class DoorEditor(QtWidgets.QDialog):
         if old_tile_id != new_doorobj.tile_id:
             if self.parent.tileIDExists(new_doorobj.tile_id):
                 self.parent.errorDialog("Unable to change door settings",
-                                      "Tile ID '%s' is already is use!"
+                                        "Tile ID '%s' is already is use!"
                                         % new_doorobj.tile_id)
 
             new_doorobj.set_tile_id(new_doorobj.tile_id)
@@ -146,13 +152,31 @@ class DoorEditor(QtWidgets.QDialog):
 
         button = self.parent.buttonAtPosition(*self.parent.selectedPosition)
 
-        if type(new_doorobj) == tile.LockedDoor:
-            button.addDoors(doors=[settings.direction])
-        else:
-            button.addDoors(keypad_doors=[settings.direction])
-
         if new_direction != direction:
-            setattr(self.tile, new_direction, doorobj)
+            if new_direction in self.directions:
+                self.parent.errorDialog("Unable to change door settings",
+                                        "You already have a door to the %s"
+                                        % new_direction)
+
+            # Remove connection to old door
+            setattr(self.tile, direction, doorobj.replacement_tile)
+            button.removeDoors(directions=[direction])
+            del self.directions[direction]
+
+            # Re-connect door in new direction
+            setattr(self.tile, new_direction, new_doorobj)
+            self.directions[new_direction] = new_doorobj
+
+        if type(new_doorobj) == tile.LockedDoor:
+            button.addDoors(doors=[new_direction])
+        else:
+            button.addDoors(keypad_doors=[new_direction])
+
+        # Re-draw button
+        button.update()
+
+        # Re-draw door browser table
+        self.populateTable()
 
         # Enabling saving if it was disabled
         self.parent.setSaveEnabled(True)

@@ -123,12 +123,9 @@ class TileButton(QtWidgets.QPushButton):
             if d in self.keypad_doors:
                 self.keypad_doors.remove(d)
 
-        self.update()
-
     def addDoors(self, doors=[], keypad_doors=[]):
         self.doors.extend(doors)
         self.keypad_doors.extend(keypad_doors)
-        self.update()
 
     def paintEvent(self, event):
         super(TileButton, self).paintEvent(event)
@@ -180,6 +177,7 @@ class TileButton(QtWidgets.QPushButton):
 
         self.clearDoors()
         self.addDoors(doors, keypad_doors)
+        self.update()
 
     def drawLine(self, colour, width, x1, y1, x2, y2):
         painter = QtGui.QPainter(self)
