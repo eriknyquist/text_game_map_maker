@@ -9,39 +9,74 @@ class AutoFormSettings(object):
 
 class WallSettings(AutoFormSettings):
     spec = {
-        "north": {"type": "bool"},
-        "south": {"type": "bool"},
-        "east": {"type": "bool"},
-        "west": {"type": "bool"}
+        "north": {"type": "bool", "tooltip": "Enable/disable wall to the north"},
+        "south": {"type": "bool", "tooltip": "Enable/disable wall to the south"},
+        "east": {"type": "bool", "tooltip": "Enable/disable wall to the east"},
+        "west": {"type": "bool", "tooltip": "Enable/disable wall to the west"},
     }
 
 class DoorSettings(AutoFormSettings):
     spec = {
-        "direction": {"type": "choice", "choices": ["north", "south", "east", "west"]},
-        "prefix": {"type": "str"},
-        "name": {"type": "str"},
-        "tile_id": {"type": "str", "label": "tile ID"}
+        "direction": {"type": "choice", "choices": ["north", "south", "east", "west"],
+                      "tooltip": "Set the direction to this door from currently"
+                      " selected tile"},
+        "prefix": {"type": "str", "tooltip": "Set the word that should precede "
+                   "the name of this door, usually 'a' or 'an' (e.g. 'a' "
+                   "wooden door, 'an' oak door)"},
+        "name": {"type": "str", "tooltip": "name of this door, e.g. "
+                 "'wooden door' or 'oak door'"},
+        "tile_id": {"type": "str", "label": "tile ID", "tooltip": "unique "
+                    "identifier for programmatic access to this door"}
     }
 
 class KeypadDoorSettings(AutoFormSettings):
     spec = {
-        "direction": {"type": "choice", "choices": ["north", "south", "east", "west"]},
-        "prefix": {"type": "str"},
-        "name": {"type": "str"},
-        "tile_id": {"type": "str", "label": "tile ID"},
-        "code": {"type": "int", "label": "keypad code"},
-        "prompt": {"type": "str", "label": "keypad prompt"}
+        "direction": {"type": "choice", "choices": ["north", "south", "east", "west"],
+                      "tooltip": "Set the direction to this door from currently"
+                      " selected tile"},
+        "prefix": {"type": "str", "tooltip": "Set the word that should precede "
+                   "the name of this door, usually 'a' or 'an' (e.g. 'a' "
+                   "wooden door, 'an' oak door)"},
+        "name": {"type": "str", "tooltip": "name of this door, e.g. "
+                 "'wooden door' or 'oak door'"},
+        "tile_id": {"type": "str", "label": "tile ID", "tooltip": "unique "
+                    "identifier for programmatic access to this door"},
+        "code": {"type": "int", "label": "keypad code", "tooltip": "Integer "
+                 "code required to unlock this door"},
+        "prompt": {"type": "str", "label": "keypad prompt", "tooltip": "String "
+                   "used to prompt player for keypad code entry"}
     }
 
 class TileSettings(AutoFormSettings):
     spec = {
-        'description': {'type':'long_str'},
-        'name': {'type': 'str'},
-        'tile_id': {'type': 'str', 'label': 'tile ID'},
-        'first_visit_message': {'type': 'long_str', 'label': 'first visit message'},
-        'first_visit_message_in_dark': {'type': 'bool', 'label': 'show first visit message if dark'},
-        'dark': {'type': 'bool'},
-        'smell_description': {'type': 'str', 'label': 'smell description'},
-        'ground_smell_description': {'type': 'str', 'label': 'ground smell description'},
-        'ground_taste_description': {'type': 'str', 'label': 'ground taste description'}
+        'description': {'type':'long_str', 'tooltip': "String used to describe "
+                        "the tile to player when they enter it. Note that this "
+                        "string will always be prefixed with 'You are' during "
+                        "gameplay"},
+        'name': {'type': 'str', 'tooltip': "Short string used to describe this "
+                 "tile to the player from afar, e.g. 'to the east is "
+                 "<tile.prefix> <tile.name>'"},
+        "prefix": {"type": "str", "tooltip": "Set the word that should precede "
+                   "the name of this tile, usually 'a' or 'an' (e.g. 'a' "
+                   "scary room, 'an' apple orchard)"},
+        'tile_id': {'type': 'str', 'label': 'tile ID', "tooltip": "unique "
+                    "identifier for programmatic access to this tile"},
+        'first_visit_message': {'type': 'long_str', 'label': 'first visit message',
+                                'tooltip': "String displayed only when player "
+                                "enters this tile for the first time"},
+        'first_visit_message_in_dark': {'type': 'bool', 'label': 'show first visit message if dark',
+                                        'tooltip': "Enable/disable showing the "
+                                        "first visit message if the current tile "
+                                        "is dark"},
+        'dark': {'type': 'bool', 'tooltip': "If enabled, player will need a "
+                 "light source to see anything on this tile"},
+        'smell_description': {'type': 'str', 'label': 'smell description',
+                              'tooltip': "String displayed when player smells "
+                              "the air on the current tile"},
+        'ground_smell_description': {'type': 'str', 'label': 'ground smell description',
+                                     'tooltip': "String displayed when player "
+                                     "smells the ground on the current tile"},
+        'ground_taste_description': {'type': 'str', 'label': 'ground taste description',
+                                     'tooltip': "String displayed when player "
+                                     "tastes the ground on the current tile"}
     }
