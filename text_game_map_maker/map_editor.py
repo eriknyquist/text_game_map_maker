@@ -96,6 +96,7 @@ class MapEditor(QtWidgets.QDialog):
         self.scrollArea = QtWidgets.QScrollArea(self)
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
+
         self.gridLayout = QtWidgets.QGridLayout(self.scrollAreaWidgetContents)
         self.gridLayout.setHorizontalSpacing(2)
         self.gridLayout.setVerticalSpacing(2)
@@ -110,13 +111,13 @@ class MapEditor(QtWidgets.QDialog):
         self.rows = NUM_BUTTON_ROWS
         self.columns = NUM_BUTTON_COLUMNS
 
-        button_size = int(self.screen_height / NUM_BUTTONS_PER_SCREEN_HEIGHT)
+        self.button_size = int(self.screen_height / NUM_BUTTONS_PER_SCREEN_HEIGHT)
 
         for i in range(self.rows):
             for j in range(self.columns):
                 btn = tile_button.TileButton(self)
                 btn.setAttribute(QtCore.Qt.WA_StyledBackground)
-                btn.setFixedSize(button_size, button_size)
+                btn.setFixedSize(self.button_size, self.button_size)
                 btn.calculate_dimensions()
                 btn.installEventFilter(btn)
                 self.gridLayout.addWidget(btn, i, j)
@@ -596,6 +597,7 @@ class MapEditor(QtWidgets.QDialog):
                 obj.setEnabled(filled)
 
         button.setFocus(True)
+        self.scrollArea.ensureWidgetVisible(button)
 
     def onMiddleClick(self, button):
         pass
