@@ -222,7 +222,10 @@ class DoorEditor(QtWidgets.QDialog):
             settings_obj.tile_id = tile_id
 
         while not complete:
-            dialog = QtAutoForm(settings_obj, title=window_title, spec=settings_obj.spec)
+            dialog = QtAutoForm(settings_obj, title=window_title,
+                                formTitle="Set attributes for selected door",
+                                spec=settings_obj.spec)
+
             dialog.setWindowModality(QtCore.Qt.ApplicationModal)
             dialog.setWindowIcon(QtGui.QIcon(self.parent.main.iconPath))
             dialog.exec_()

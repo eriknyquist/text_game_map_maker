@@ -141,8 +141,13 @@ class QtAutoForm(QDialog):
     NumGridRows = 3
     NumButtons = 4
 
-    def __init__(self, instance, title=None, spec=None):
+    def __init__(self, instance, title=None, spec=None, formTitle=None):
         super(QtAutoForm, self).__init__()
+
+        if formTitle is None:
+            self.form_title = instance.__class__.__name__
+        else:
+            self.form_title = formTitle
 
         self.spec = spec
         self.widgets = []
@@ -172,7 +177,7 @@ class QtAutoForm(QDialog):
 
     def createFormFromInstance(self, instance):
         classname = instance.__class__.__name__
-        self.formGroupBox = QGroupBox(instance.__class__.__name__)
+        self.formGroupBox = QGroupBox(self.form_title)
         layout = QFormLayout()
 
         self.widgets = []

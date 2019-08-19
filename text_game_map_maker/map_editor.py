@@ -487,7 +487,10 @@ class MapEditor(QtWidgets.QDialog):
             setattr(settings, direction, val)
 
         # Display form
-        dialog = QtAutoForm(settings, title="Tile attributes", spec=settings.spec)
+        dialog = QtAutoForm(settings, title="Edit walls",
+                            formTitle="Select directions to be blocked by walls",
+                            spec=settings.spec)
+
         dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         dialog.setWindowIcon(QtGui.QIcon(self.main.iconPath))
         dialog.exec_()
@@ -651,7 +654,8 @@ class MapEditor(QtWidgets.QDialog):
             self.startTileCheckBox.setEnabled(False)
 
         for obj in [self.doorButton, self.deleteButton, self.wallButton,
-                    self.main.editDoorsAction, self.main.deleteTileAction]:
+                    self.main.editDoorsAction, self.main.editWallsAction,
+                    self.main.deleteTileAction]:
             if obj.isEnabled() != filled:
                 obj.setEnabled(filled)
 
@@ -684,7 +688,10 @@ class MapEditor(QtWidgets.QDialog):
 
         complete = False
         while not complete:
-            dialog = QtAutoForm(settings, title="Tile attributes", spec=settings.spec)
+            dialog = QtAutoForm(settings, title="Tile attributes",
+                                formTitle="Set attributes of currently selected tile",
+                                spec=settings.spec)
+
             dialog.setWindowModality(QtCore.Qt.ApplicationModal)
             dialog.setWindowIcon(QtGui.QIcon(self.main.iconPath))
             dialog.exec_()

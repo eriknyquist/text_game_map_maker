@@ -72,6 +72,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editDoorsAction.setStatusTip("Add/edit doors on selected tile")
         self.editDoorsAction.triggered.connect(self.widget.doorButtonClicked)
 
+        self.editWallsAction = QtWidgets.QAction("Edit walls on selected tile", self)
+        self.editWallsAction.setShortcut("Ctrl+W")
+        self.editWallsAction.setStatusTip("Add/edit walls on selected tile")
+        self.editWallsAction.triggered.connect(self.widget.wallButtonClicked)
+
         self.deleteTileAction = QtWidgets.QAction("Delete selected tile", self)
         self.deleteTileAction.setShortcut("Ctrl+R")
         self.deleteTileAction.setStatusTip("Delete selected tile")
@@ -85,14 +90,15 @@ class MainWindow(QtWidgets.QMainWindow):
         menu = self.menuBar()
         fileMenu = menu.addMenu("File")
         fileMenu.addAction(self.openAction)
+        fileMenu.addAction(self.loadGameAction)
         fileMenu.addAction(self.saveAction)
         fileMenu.addAction(self.saveAsAction)
-        fileMenu.addAction(self.loadGameAction)
 
         editMenu = menu.addMenu("Edit")
         editMenu.addAction(self.editTileAction)
         editMenu.addAction(self.deleteTileAction)
         editMenu.addAction(self.editDoorsAction)
+        editMenu.addAction(self.editWallsAction)
 
         helpMenu = menu.addMenu("Help")
         helpMenu.addAction(self.aboutAction)
