@@ -158,6 +158,7 @@ class MapEditor(QtWidgets.QDialog):
         self.deleteButton = QtWidgets.QPushButton()
         self.clearButton = QtWidgets.QPushButton()
         self.doorButton = QtWidgets.QPushButton()
+        self.wallButton = QtWidgets.QPushButton()
         self.saveButton = QtWidgets.QPushButton()
         self.loadButton = QtWidgets.QPushButton()
         self.loadFromSavedGameButton = QtWidgets.QPushButton()
@@ -165,6 +166,7 @@ class MapEditor(QtWidgets.QDialog):
         self.deleteButton.setText("Delete tile")
         self.clearButton.setText("Clear all tiles")
         self.doorButton.setText("Edit doors")
+        self.wallButton.setText("Edit walls")
         self.saveButton.setText("Save to file")
         self.loadButton.setText("Load from file")
         self.loadFromSavedGameButton.setText("Load map from saved game")
@@ -172,6 +174,7 @@ class MapEditor(QtWidgets.QDialog):
         self.deleteButton.clicked.connect(self.deleteButtonClicked)
         self.clearButton.clicked.connect(self.clearButtonClicked)
         self.doorButton.clicked.connect(self.doorButtonClicked)
+        self.wallButton.clicked.connect(self.wallButtonClicked)
         self.saveButton.clicked.connect(self.saveButtonClicked)
         self.loadButton.clicked.connect(self.loadButtonClicked)
         self.loadFromSavedGameButton.clicked.connect(self.loadFromSavedGameButtonClicked)
@@ -190,6 +193,7 @@ class MapEditor(QtWidgets.QDialog):
         checkBoxLayout.setAlignment(QtCore.Qt.AlignCenter)
 
         self.doorButton.setEnabled(False)
+        self.wallButton.setEnabled(False)
         self.clearButton.setEnabled(False)
         self.deleteButton.setEnabled(False)
 
@@ -197,6 +201,7 @@ class MapEditor(QtWidgets.QDialog):
         tileButtonLayout.addWidget(self.deleteButton)
         tileButtonLayout.addWidget(self.clearButton)
         tileButtonLayout.addWidget(self.doorButton)
+        tileButtonLayout.addWidget(self.wallButton)
         tileButtonLayout.addLayout(checkBoxLayout)
         tileButtonGroup = QtWidgets.QGroupBox("Edit selected tile")
         tileButtonGroup.setAlignment(QtCore.Qt.AlignCenter)
@@ -235,12 +240,8 @@ class MapEditor(QtWidgets.QDialog):
             del _tiles[pos]
             button.setStyle(selected=False, start=False)
 
-        if self.selectedPosition:
-            pos = self.selectedPosition
-        else:
-            pos = (0, 0)
-
-        self.setSelectedPosition(self.buttonAtPosition(*pos))
+        self.startTilePosition = None
+        self.setSelectedPosition(self.buttonAtPosition(0, 0))
 
     def yesNoDialog(self, header="", msg="Are you sure?"):
         reply = QtWidgets.QMessageBox.question(self, header, msg,
@@ -436,7 +437,7 @@ class MapEditor(QtWidgets.QDialog):
         if not reply:
             return
 
-        self.disconnectSurroundingTiles(tileobj, self.selectedPosition)
+        self.disconnectSurroundingTiles(tileobj, *self.selectedPosition)
         del _tiles[self.selectedPosition]
         button.setText("")
 
@@ -472,6 +473,63 @@ class MapEditor(QtWidgets.QDialog):
         doors_dialog = DoorEditor(self, tileobj)
         doors_dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         doors_dialog.exec_()
+
+    def wallButtonClicked(self):
+        tileobj = _tiles[self.selectedPosition]
+        button = self.buttonAtPosition(*self.selectedPosition)
+
+        settings = forms.WallSettings()
+
+        # Populate form with existing wall configuration for selected tile
+        for direction in ['north', 'south', 'east', 'west']:
+            adj = getattr(tileobj, direction)
+            val = True if (adj is None) or adj.is_door() else False
+            setattr(settings, direction, val)
+
+        # Display form
+        dialog = QtAutoForm(settings, title="Tile attributes", spec=settings.spec)
+        dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+        dialog.setWindowIcon(QtGui.QIcon(self.main.iconPath))
+        dialog.exec_()
+
+        if not dialog.wasAccepted():
+            # Dialog was cancelled or closed
+            return None
+
+        # Apply form settings to selected tile
+        for direction in ['north', 'south', 'east', 'west']:
+            adj = getattr(tileobj, direction)
+            had_wall = True if (adj is None) or adj.is_door() else False
+            has_wall = getattr(settings, direction)
+
+            # No change, we're done with this iteration
+            if had_wall == has_wall:
+                continue
+
+            if has_wall:
+                # Adding a wall
+                setattr(adj, tile.reverse_direction(direction), None)
+                setattr(tileobj, direction, None)
+            else:
+                # Removing a wall
+                oldy, oldx = self.selectedPosition
+                deltay, deltax = _move_map[direction]
+                newy, newx = oldy + deltay, oldx + deltax
+
+                # Adjacent tile is off the grid, we're done with this iteration
+                if ((newy < 0) or (newy >= self.rows) or
+                    (newx < 0) or (newx >= self.columns)):
+                    continue
+
+                adj_tile = self.tileAtPosition(newy, newx)
+                if adj_tile is None:
+                    # No tile here, we're done with this iteration
+                    continue
+
+                setattr(adj_tile, tile.reverse_direction(direction), None)
+
+        button.update()
+        self.redrawSurroundingTiles(*self.selectedPosition)
 
     def saveButtonClicked(self):
         if self.loaded_file is None:
@@ -546,9 +604,9 @@ class MapEditor(QtWidgets.QDialog):
 
         return _tiles[pos]
 
-    def surroundingTilePositions(self, position):
-        def _fetch_tile(pos, yoff, xoff):
-            oldy, oldx = pos
+    def surroundingTilePositions(self, y, x):
+        def _fetch_tile(y, x, yoff, xoff):
+            oldy, oldx = y, x
             newy = oldy + yoff
             newx = oldx + xoff
 
@@ -561,10 +619,10 @@ class MapEditor(QtWidgets.QDialog):
 
             return newpos
 
-        north = _fetch_tile(position, -1, 0)
-        south = _fetch_tile(position, 1, 0)
-        east = _fetch_tile(position, 0, 1)
-        west = _fetch_tile(position, 0, -1)
+        north = _fetch_tile(y, x, -1, 0)
+        south = _fetch_tile(y, x, 1, 0)
+        east = _fetch_tile(y, x, 0, 1)
+        west = _fetch_tile(y, x, 0, -1)
 
         return north, south, east, west
 
@@ -592,7 +650,8 @@ class MapEditor(QtWidgets.QDialog):
             _silent_checkbox_set(self.startTileCheckBox, False, self.onStartTileSet)
             self.startTileCheckBox.setEnabled(False)
 
-        for obj in [self.doorButton, self.deleteButton, self.main.editDoorsAction, self.main.deleteTileAction]:
+        for obj in [self.doorButton, self.deleteButton, self.wallButton,
+                    self.main.editDoorsAction, self.main.deleteTileAction]:
             if obj.isEnabled() != filled:
                 obj.setEnabled(filled)
 
@@ -655,8 +714,21 @@ class MapEditor(QtWidgets.QDialog):
 
         return tileobj
 
-    def disconnectSurroundingTiles(self, tileobj, position):
-        north, south, east, west = self.surroundingTilePositions(position)
+    def redrawSurroundingTiles(self, y, x):
+        north, south, east, west = self.surroundingTilePositions(y, x)
+        adjacent_tiles = {'north': north, 'south': south, 'east': east, 'west': west}
+
+        for direction in adjacent_tiles:
+            adjacent_tilepos = adjacent_tiles[direction]
+
+            if not adjacent_tilepos:
+                continue
+
+            button = self.buttonAtPosition(*adjacent_tilepos)
+            button.update()
+
+    def disconnectSurroundingTiles(self, tileobj, y, x):
+        north, south, east, west = self.surroundingTilePositions(y, x)
         adjacent_tiles = {'north': north, 'south': south, 'east': east, 'west': west}
 
         for direction in adjacent_tiles:
@@ -680,8 +752,8 @@ class MapEditor(QtWidgets.QDialog):
             else:
                 setattr(adjacent_tileobj, tile.reverse_direction(direction), None)
 
-    def connectSurroundingTiles(self, tileobj, position):
-        north, south, east, west = self.surroundingTilePositions(position)
+    def connectSurroundingTiles(self, tileobj, y, x):
+        north, south, east, west = self.surroundingTilePositions(y, x)
         adjacent_tiles = {'north': north, 'south': south, 'east': east, 'west': west}
 
         for direction in adjacent_tiles:
@@ -725,7 +797,7 @@ class MapEditor(QtWidgets.QDialog):
             # Created a new tile
             _tiles[position] = tileobj
             button.setStyle(selected=True, start=False)
-            self.connectSurroundingTiles(tileobj, position)
+            self.connectSurroundingTiles(tileobj, *position)
 
         button.setText(str(tileobj.tile_id))
         self.setSelectedPosition(button)

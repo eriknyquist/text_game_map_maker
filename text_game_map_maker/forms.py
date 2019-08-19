@@ -7,6 +7,14 @@ class AutoFormSettings(object):
         for attrname in self.spec.keys():
             setattr(self, attrname, None)
 
+class WallSettings(AutoFormSettings):
+    spec = {
+        "north": {"type": "bool"},
+        "south": {"type": "bool"},
+        "east": {"type": "bool"},
+        "west": {"type": "bool"}
+    }
+
 class DoorSettings(AutoFormSettings):
     spec = {
         "direction": {"type": "choice", "choices": ["north", "south", "east", "west"]},
