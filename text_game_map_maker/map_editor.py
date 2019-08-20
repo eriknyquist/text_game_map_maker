@@ -675,7 +675,6 @@ class MapEditor(QtWidgets.QDialog):
             tileobj = _tiles[position]
             settings.description = tileobj.description
             settings.name = tileobj.name
-            settings.prefix = tileobj.prefix
             settings.tile_id = tileobj.tile_id
             settings.first_visit_message = tileobj.first_visit_message
             settings.first_visit_message_in_dark = tileobj.first_visit_message_in_dark
@@ -713,7 +712,6 @@ class MapEditor(QtWidgets.QDialog):
 
         tileobj.description = settings.description
         tileobj.name = settings.name
-        tileobj.prefix = settings.prefix
         tileobj.first_visit_message = settings.first_visit_message
         tileobj.first_visit_message_in_dark = settings.first_visit_message_in_dark
         tileobj.dark = settings.dark
