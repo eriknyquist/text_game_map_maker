@@ -181,9 +181,10 @@ class QtAutoForm(QDialog):
         layout = QFormLayout()
 
         self.widgets = []
-        for attrname in instance.__dict__:
-            if (self.spec is not None) and (attrname not in self.spec):
-                continue
+        for attrname in self.spec:
+            if attrname not in instance.__dict__:
+                raise RuntimeError("attribute '%s' is in spec but not found in "
+                                   "instance" % attrname)
 
             input_widget = getInputWidgetForAttr(instance, attrname, self.spec)
 
