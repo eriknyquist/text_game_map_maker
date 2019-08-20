@@ -125,6 +125,7 @@ class MainWindow(QtWidgets.QMainWindow):
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     win = MainWindow(app.primaryScreen())
+    win.setWindowTitle("%s %s" % (package_name, package_version))
     win.show()
     sys.exit(app.exec_())
 
