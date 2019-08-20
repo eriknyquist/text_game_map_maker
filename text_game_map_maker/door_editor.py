@@ -217,6 +217,8 @@ class DoorEditor(QtWidgets.QDialog):
         complete = False
         if tile_id is None:
             settings_obj.tile_id = "door%d" % self.door_id
+            settings_obj.name = "door"
+            settings_obj.prefix = "a"
             self.door_id += 1
         else:
             settings_obj.tile_id = tile_id
