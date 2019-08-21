@@ -407,8 +407,8 @@ class MapEditor(QtWidgets.QDialog):
             return
 
         if not os.path.exists(filename):
-            self.errorDialog("Error opening file", "Unable to open file '%s'" % filename)
-            return
+            self.errorDialog("Can't find file", "There doesn't seem to be a "
+                             "file called '%s'" % filename)
 
         try:
             with open(filename, 'rb') as fh:
@@ -560,8 +560,13 @@ class MapEditor(QtWidgets.QDialog):
         self.saveToFile(filename)
 
     def saveToFile(self, filename):
-        with open(filename, 'w') as fh:
-            json.dump(self.serialize(), fh)
+        try:
+            with open(filename, 'w') as fh:
+                json.dump(self.serialize(), fh)
+        except Exception:
+            self.errorDialog("Unable to save map data",
+                 "Writing saved map data to file '%s' failed:\n\n%s"
+                 % (filename, traceback.format_exc()))
 
         self.setSaveEnabled(False)
 
@@ -577,7 +582,8 @@ class MapEditor(QtWidgets.QDialog):
             return
 
         if not os.path.exists(filename):
-            self.errorDialog("Error opening file", "Unable to open file '%s'" % filename)
+            self.errorDialog("Can't find file", "There doesn't seem to be a "
+                             "file called '%s'" % filename)
             return
 
         try:

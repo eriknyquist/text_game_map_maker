@@ -11,19 +11,12 @@ from text_game_map_maker import __name__ as package_name
 from text_game_map_maker import __version__ as package_version
 
 
-class TextDisplayWindow(QtWidgets.QDialog):
-    def __init__(self, title, text):
-        super(TextDisplayWindow, self).__init__()
-
-        self.setMinimumSize(QtCore.QSize(440, 240))
-        self.setWindowTitle(title)
-
-        self.mainLayout = QtWidgets.QVBoxLayout(self)
-        self.textField = QtWidgets.QPlainTextEdit(self)
-        self.textField.insertPlainText(text)
-        self.textField.setReadOnly(True)
-
-        self.mainLayout.addWidget(self.textField)
+def textDisplayWindow(title, message):
+    msg = QtWidgets.QMessageBox()
+    msg.setInformativeText(message)
+    msg.setWindowTitle(title)
+    msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+    msg.exec_()
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, primary_screen):
@@ -118,9 +111,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "version: %s" % (package_version)
         ]
 
-        msgBox = TextDisplayWindow("About", "\n".join(lines))
-        msgBox.setWindowIcon(QtGui.QIcon(self.iconPath))
-        msgBox.exec_()
+        textDisplayWindow("About %s" % package_name, "\n".join(lines))
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
