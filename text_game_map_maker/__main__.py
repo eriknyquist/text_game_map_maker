@@ -102,6 +102,12 @@ class MainWindow(QtWidgets.QMainWindow):
         # Saving is disabled initially
         self.widget.setSaveEnabled(False)
 
+    def closeEvent(self, event):
+        if self.widget.warningBeforeQuit():
+            event.accept()
+        else:
+            event.ignore()
+
     def showAboutWindow(self):
         lines = [
             "%s is a tool for creating maps that can be loaded and" % package_name,

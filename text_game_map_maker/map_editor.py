@@ -220,10 +220,13 @@ class MapEditor(QtWidgets.QDialog):
         self.buttonAreaLayout.addWidget(tileButtonGroup)
         self.buttonAreaLayout.addWidget(fileButtonGroup)
 
+    def warningBeforeQuit(self):
+        return self.yesNoDialog("Are you sure?", "Are you sure you want to quit?"
+                                " You will lose any unsaved data.")
+
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
-            reply = self.yesNoDialog("Are you sure?", "Are you sure you want to quit?")
-            if reply:
+            if self.warningBeforeQuit():
                 QtWidgets.qApp.quit()
 
     def setSaveEnabled(self, value):
