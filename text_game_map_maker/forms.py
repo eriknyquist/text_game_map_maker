@@ -51,14 +51,16 @@ class KeypadDoorSettings(AutoFormSettings):
 
 class TileSettings(AutoFormSettings):
     spec = OrderedDict([
+        ('tile_id', {'type': 'str', 'label': 'tile ID', "tooltip": "Unique "
+                    "identifier for programmatic access to this tile"}),
+        ('name', {'type': 'str', 'tooltip': "Short string used to describe this "
+                 "tile to the player from afar, e.g. 'a scary room'"}),
         ('description', {'type':'long_str', 'tooltip': "String used to describe "
                         "the tile to player when they enter it. Note that this "
                         "string will always be prefixed with 'You are' during "
                         "gameplay"}),
-        ('name', {'type': 'str', 'tooltip': "Short string used to describe this "
-                 "tile to the player from afar, e.g. 'a scary room'"}),
-        ('tile_id', {'type': 'str', 'label': 'tile ID', "tooltip": "unique "
-                    "identifier for programmatic access to this tile"}),
+        ('dark', {'type': 'bool', 'tooltip': "If enabled, player will need a "
+                 "light source to see anything on this tile"}),
         ('first_visit_message', {'type': 'long_str', 'label': 'first visit message',
                                 'tooltip': "String displayed only when player "
                                 "enters this tile for the first time"}),
@@ -66,8 +68,6 @@ class TileSettings(AutoFormSettings):
                                         'tooltip': "Enable/disable showing the "
                                         "first visit message if the current tile "
                                         "is dark"}),
-        ('dark', {'type': 'bool', 'tooltip': "If enabled, player will need a "
-                 "light source to see anything on this tile"}),
         ('smell_description', {'type': 'str', 'label': 'smell description',
                               'tooltip': "String displayed when player smells "
                               "the air on the current tile"}),
