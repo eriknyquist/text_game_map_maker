@@ -574,12 +574,39 @@ class MapEditor(QtWidgets.QDialog):
 
     def saveToFile(self, filename):
         try:
-            with open(filename, 'w') as fh:
-                json.dump(self.serialize(), fh)
+            string_data = json.dumps(self.serialize())
+            compressed = zlib.compress(bytes(string_data, encoding="utf8"))
+
+            with open(filename, 'wb') as fh:
+                fh.write(compressed)
         except Exception:
-            self.errorDialog("Unable to save map data",
-                 "Writing saved map data to file '%s' failed:\n\n%s"
-                 % (filename, traceback.format_exc()))
+            self.errorDialog("Error saving map data",
+                             "Unable to save map data to file %s:\n\n%s"
+                             % (filename, traceback.format_exc()))
+
+        self.setSaveEnabled(False)
+
+    def loadFromFile(self, filename):
+        if not os.path.exists(filename):
+            self.errorDialog("Can't find file", "There doesn't seem to be a "
+                             "file called '%s'" % filename)
+            return
+
+        try:
+            with open(filename, 'rb') as fh:
+                strdata = fh.read()
+
+            decompressed = zlib.decompress(strdata).decode("utf-8")
+            attrs = json.loads(decompressed)
+            self.deserialize(attrs)
+        except Exception:
+            self.errorDialog("Error loading saved map data",
+                             "Unable to load saved map data from file %s:\n\n%s"
+                             % (filename, traceback.format_exc()))
+
+        self.loaded_file = filename
+        if _tiles:
+            self.clearButton.setEnabled(True)
 
         self.setSaveEnabled(False)
 
@@ -594,26 +621,7 @@ class MapEditor(QtWidgets.QDialog):
         if filename.strip() == '':
             return
 
-        if not os.path.exists(filename):
-            self.errorDialog("Can't find file", "There doesn't seem to be a "
-                             "file called '%s'" % filename)
-            return
-
-        try:
-            with open(filename, 'r') as fh:
-                attrs = json.load(fh)
-
-            self.deserialize(attrs)
-        except Exception as e:
-            self.errorDialog("Error loading saved map data",
-                             "Unable to load saved map data from file %s:\n\n%s"
-                             % (filename, traceback.format_exc()))
-
-        self.loaded_file = filename
-        if _tiles:
-            self.clearButton.setEnabled(True)
-
-        self.setSaveEnabled(False)
+        self.loadFromFile(filename)
 
     def getButtonPosition(self, button):
         idx = self.gridLayout.indexOf(button)
