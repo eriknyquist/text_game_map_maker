@@ -23,6 +23,8 @@ DEFAULT_WINDOW_HEIGHT = 400
 
 NUM_BUTTONS_PER_SCREEN_HEIGHT = 5.0
 
+MAP_BUILDER_SAVE_FILE_SUFFIX = "tgmdata"
+
 _tiles = {}
 
 _move_map = {
@@ -534,6 +536,23 @@ class MapEditor(QtWidgets.QDialog):
         button.update()
         self.redrawSurroundingTiles(*self.selectedPosition)
 
+    def saveFileDialog(self):
+        dialog = QtWidgets.QFileDialog(self)
+        dialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
+        dialog.setDefaultSuffix(MAP_BUILDER_SAVE_FILE_SUFFIX)
+        dialog.setNameFilter("Text Game Map Data Files (*.%s)"
+                             % MAP_BUILDER_SAVE_FILE_SUFFIX)
+
+        if dialog.exec_():
+            filenames = dialog.selectedFiles()
+            if len(filenames) != 1:
+                return None
+
+            return filenames[0]
+
+        return None
+
     def saveButtonClicked(self):
         if self.loaded_file is None:
             self.saveAsButtonClicked()
@@ -546,15 +565,9 @@ class MapEditor(QtWidgets.QDialog):
                              "must set a start tile before saving.")
             return
 
-        filedialog = QtWidgets.QFileDialog
-        options = filedialog.Options()
-        options |= filedialog.DontUseNativeDialog
-        filename, _ = filedialog.getSaveFileName(self, "Select save file",
-                             "", "All Files (*);;Text Files (*.txt)",
-                                                 options=options)
-
-        # Cancelled?
-        if filename.strip() == "":
+        filename = self.saveFileDialog()
+        # Cancelled, or empty string?
+        if (filename == None) or (filename.strip() == ""):
             return
 
         self.saveToFile(filename)
