@@ -31,4 +31,7 @@ setup(
     license='Apache 2.0',
     install_requires=dependencies,
     packages=['text_game_map_maker'],
+    package_data={'text_game_map_maker':['images/logo.png']},
+    include_package_data=True,
+    zip_safe=False
 )
