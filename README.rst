@@ -28,4 +28,4 @@ Run ``text_game_map_maker`` via the Python interpreter:
     python -m text_game_map_maker
 
 Optionally, for windows users, there is a ``run_text_game_map_maker.bat`` script
-you can click on to start the application
+you can click on to start the application.
