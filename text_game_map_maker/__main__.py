@@ -134,7 +134,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "You can also use the arrow keys to change the selected tile, and ",
             "the Enter key to create/edit the currently selected tile.\n\n",
             "Tiles created next to each other will be automatically connected ",
-            "(e.g. the player can move freely between them), but you can use "
+            "(i.e. the player can move freely between them), but you can use "
             "the buttons in the toolbar to add walls or doors between adjacent ",
             "tiles.",
         ]
