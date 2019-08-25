@@ -227,9 +227,9 @@ class MapEditor(QtWidgets.QDialog):
         compassGroup.setLayout(compassLayout)
         compassGroup.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
 
+        self.buttonAreaLayout.addWidget(compassGroup)
         self.buttonAreaLayout.addWidget(tileButtonGroup)
         self.buttonAreaLayout.addWidget(fileButtonGroup)
-        self.buttonAreaLayout.addWidget(compassGroup)
 
     def warningBeforeQuit(self):
         return self.yesNoDialog("Are you sure?", "Are you sure you want to quit?"
