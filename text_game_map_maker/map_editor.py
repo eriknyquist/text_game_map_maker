@@ -21,7 +21,7 @@ NUM_BUTTON_COLUMNS = 50
 DEFAULT_WINDOW_WIDTH = 500
 DEFAULT_WINDOW_HEIGHT = 400
 
-NUM_BUTTONS_PER_SCREEN_HEIGHT = 5.0
+NUM_BUTTONS_PER_SCREEN_HEIGHT = 6.0
 
 MAP_BUILDER_SAVE_FILE_SUFFIX = "tgmdata"
 
@@ -217,8 +217,19 @@ class MapEditor(QtWidgets.QDialog):
         fileButtonGroup.setAlignment(QtCore.Qt.AlignCenter)
         fileButtonGroup.setLayout(fileButtonLayout)
 
+        compass = QtWidgets.QLabel(self)
+        pixmap = QtGui.QPixmap(self.main.compassPath,"1")
+        pixmap = pixmap.scaled(128, 128)
+        compass.setPixmap(pixmap)
+        compassLayout = QtWidgets.QHBoxLayout()
+        compassLayout.addWidget(compass)
+        compassGroup = QtWidgets.QGroupBox()
+        compassGroup.setLayout(compassLayout)
+        compassGroup.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
         self.buttonAreaLayout.addWidget(tileButtonGroup)
         self.buttonAreaLayout.addWidget(fileButtonGroup)
+        self.buttonAreaLayout.addWidget(compassGroup)
 
     def warningBeforeQuit(self):
         return self.yesNoDialog("Are you sure?", "Are you sure you want to quit?"

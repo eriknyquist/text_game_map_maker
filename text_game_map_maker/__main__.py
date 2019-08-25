@@ -27,7 +27,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def initUi(self):
         scriptDir = os.path.dirname(os.path.realpath(__file__))
-        self.iconPath = os.path.join(scriptDir, 'images', 'logo.png')
+        imageDir = os.path.join(scriptDir, 'images')
+        self.iconPath = os.path.join(imageDir, 'logo.png')
+        self.compassPath = os.path.join(imageDir, 'compass.png')
         self.setWindowIcon(QtGui.QIcon(self.iconPath))
 
         self.widget = MapEditor(self.primary_screen, self)
