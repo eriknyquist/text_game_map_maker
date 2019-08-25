@@ -185,7 +185,7 @@ class MapEditor(QtWidgets.QDialog):
         self.startTileCheckBox.setStyleSheet("margin-left:50%; margin-right:50%;")
         self.startTileCheckBox.setChecked(False)
         self.startTileCheckBox.setEnabled(False)
-        self.startTileCheckBox.stateChanged.connect(self.onStartTileSet)
+        self.startTileCheckBox.stateChanged.connect(self.setStartTile)
 
         label = QtWidgets.QLabel("Start tile")
         label.setAlignment(QtCore.Qt.AlignCenter)
@@ -394,18 +394,28 @@ class MapEditor(QtWidgets.QDialog):
 
             return lowest_tile
 
-    def onStartTileSet(self, state):
-        if state == QtCore.Qt.Checked:
-            if self.startTilePosition is not None:
-                # Set current start tile colour back to default
-                old_start = self.buttonAtPosition(*self.startTilePosition)
-                old_start.setStyle(selected=False, start=False)
+    def setStartTile(self, state=None):
+        if self.selectedPosition == self.startTilePosition:
+            return
 
-            new_start = self.buttonAtPosition(*self.selectedPosition)
-            new_start.setStyle(selected=True, start=True)
-            self.startTilePosition = self.selectedPosition
-            self.startTileCheckBox.setEnabled(False)
-            self.setSaveEnabled(True)
+        if self.selectedPosition not in _tiles:
+            return
+
+        if self.startTilePosition is not None:
+            # Set current start tile colour back to default
+            old_start = self.buttonAtPosition(*self.startTilePosition)
+            old_start.setStyle(selected=False, start=False)
+
+        if not self.startTileCheckBox.isChecked():
+            self.startTileCheckBox.stateChanged.disconnect(self.setStartTile)
+            self.startTileCheckBox.setChecked(True)
+            self.startTileCheckBox.stateChanged.connect(self.setStartTile)
+
+        new_start = self.buttonAtPosition(*self.selectedPosition)
+        new_start.setStyle(selected=True, start=True)
+        self.startTilePosition = self.selectedPosition
+        self.startTileCheckBox.setEnabled(False)
+        self.setSaveEnabled(True)
 
     def tileIDExists(self, tile_id):
         val = tile.get_tile_by_id(tile_id)
@@ -685,13 +695,13 @@ class MapEditor(QtWidgets.QDialog):
         filled = self.selectedPosition in _tiles
 
         if self.selectedPosition == self.startTilePosition:
-            _silent_checkbox_set(self.startTileCheckBox, True, self.onStartTileSet)
+            _silent_checkbox_set(self.startTileCheckBox, True, self.setStartTile)
             self.startTileCheckBox.setEnabled(False)
         elif filled:
             self.startTileCheckBox.setEnabled(True)
-            _silent_checkbox_set(self.startTileCheckBox, False, self.onStartTileSet)
+            _silent_checkbox_set(self.startTileCheckBox, False, self.setStartTile)
         else:
-            _silent_checkbox_set(self.startTileCheckBox, False, self.onStartTileSet)
+            _silent_checkbox_set(self.startTileCheckBox, False, self.setStartTile)
             self.startTileCheckBox.setEnabled(False)
 
         for obj in [self.doorButton, self.deleteButton, self.wallButton,

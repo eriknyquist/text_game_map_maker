@@ -77,6 +77,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.deleteTileAction.setStatusTip("Delete selected tile")
         self.deleteTileAction.triggered.connect(self.widget.deleteButtonClicked)
 
+        self.startTileAction = QtWidgets.QAction("Set selected tile as start tile", self)
+        self.startTileAction.setShortcut("Ctrl+T")
+        self.startTileAction.setStatusTip("Set start tile")
+        self.startTileAction.triggered.connect(self.widget.setStartTile)
+
         # Help menu actions
         self.aboutAction = QtWidgets.QAction("About", self)
         self.aboutAction.triggered.connect(self.showAboutWindow)
@@ -94,6 +99,7 @@ class MainWindow(QtWidgets.QMainWindow):
         editMenu.addAction(self.deleteTileAction)
         editMenu.addAction(self.editDoorsAction)
         editMenu.addAction(self.editWallsAction)
+        editMenu.addAction(self.startTileAction)
 
         helpMenu = menu.addMenu("Help")
         helpMenu.addAction(self.aboutAction)
