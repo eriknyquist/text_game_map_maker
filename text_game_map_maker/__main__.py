@@ -86,6 +86,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.aboutAction = QtWidgets.QAction("About", self)
         self.aboutAction.triggered.connect(self.showAboutWindow)
 
+        self.howToAction = QtWidgets.QAction("Help!", self)
+        self.howToAction.triggered.connect(self.showHowToWindow)
+
         # Build menu bar
         menu = self.menuBar()
         fileMenu = menu.addMenu("File")
@@ -103,6 +106,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         helpMenu = menu.addMenu("Help")
         helpMenu.addAction(self.aboutAction)
+        helpMenu.addAction(self.howToAction)
 
         # Set initial selection position
         self.widget.setSelectedPosition(self.widget.buttonAtPosition(0, 0))
@@ -116,16 +120,38 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             event.ignore()
 
+    def showHowToWindow(self):
+        lines = [
+            "How to use %s\n\n" % package_name,
+            "The main window of the application shows a large grid of squares, ",
+            "which represents your entire game world. Each square represents a ",
+            "distinct area within the game (referred to as a 'tile'), which the ",
+            "player can travel between using the normal movement commands ",
+            "during gameplay (e.g. 'go north', 'travel west').\n\n",
+            "Left-click on a square to create a new tile or edit the attributes ",
+            "of an existing tile. Right click on a square to select it without ",
+            "opening the tile editor window.\n\n",
+            "You can also use the arrow keys to change the selected tile, and ",
+            "the Enter key to create/edit the currently selected tile.\n\n",
+            "Tiles created next to each other will be automatically connected ",
+            "(e.g. the player can move freely between them), but you can use "
+            "the buttons in the toolbar to add walls or doors between adjacent ",
+            "tiles.",
+        ]
+
+        textDisplayWindow("How to use %s" % package_name, "".join(lines))
+
     def showAboutWindow(self):
         lines = [
             "%s is a tool for creating maps that can be loaded and" % package_name,
-            "used with the text_game_maker package.\n",
-            "text_game_maker: https://github.com/eriknyquist/text_game_maker\n",
-            "author: %s (%s)\n" % (package_author, author_email),
-            "version: %s" % (package_version)
+            "used with the text_game_maker package.\n\n",
+            "author: %s (%s)\n\n" % (package_author, author_email),
+            "version: %s\n\n" % (package_version),
+            "https://github.com/eriknyquist/text_game_maker\n\n",
+            "https://github.com/eriknyquist/text_game_map_maker"
         ]
 
-        textDisplayWindow("About %s" % package_name, "\n".join(lines))
+        textDisplayWindow("About %s" % package_name, "".join(lines))
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
