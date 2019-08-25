@@ -22,7 +22,7 @@ with open(REQFILE, 'r') as fh:
 
 setup(
     name='text_game_map_maker',
-    version='0.1.0',
+    version='0.1.1',
     description=('Graphical tool for building maps to be used with text_game_maker'),
     long_description=long_description,
     url='http://github.com/eriknyquist/text_game_map_maker',
