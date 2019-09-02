@@ -555,7 +555,8 @@ class MapEditor(QtWidgets.QDialog):
                     # No tile here, we're done with this iteration
                     continue
 
-                setattr(adj_tile, tile.reverse_direction(direction), None)
+                setattr(adj_tile, tile.reverse_direction(direction), tileobj)
+                setattr(tileobj, direction, adj_tile)
 
         button.update()
         self.redrawSurroundingTiles(*self.selectedPosition)
