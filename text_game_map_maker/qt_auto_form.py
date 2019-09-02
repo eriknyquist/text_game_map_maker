@@ -77,8 +77,6 @@ class InputWidget(object):
 
     def setInstanceValue(self):
         value = self.value_getter(self.widget)
-        if value == self.default_value:
-            return
 
         try:
             cast_value = eval(self.typename)(value)
