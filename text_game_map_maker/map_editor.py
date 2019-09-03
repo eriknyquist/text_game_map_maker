@@ -35,13 +35,11 @@ MIN_FONT_SIZE = 4
 MAX_BUTTON_SIZE = 400
 MAX_FONT_SIZE = 30
 
+SCROLL_UNITS_PER_CLICK = 120
+
 MAP_BUILDER_SAVE_FILE_SUFFIX = "tgmdata"
 
 _tiles = {}
-
-class ZoomLevel(object):
-    button_size = DEFAULT_BUTTON_SIZE
-    font_size = DEFAULT_FONT_SIZE
 
 _move_map = {
     'north': (-1, 0),
@@ -50,6 +48,10 @@ _move_map = {
     'west': (0, -1)
 }
 
+
+class ZoomLevel(object):
+    button_size = DEFAULT_BUTTON_SIZE
+    font_size = DEFAULT_FONT_SIZE
 
 def getTilePositions(start_tile):
     positions = {}
@@ -91,6 +93,14 @@ def _silent_checkbox_set(checkbox, value, handler):
     checkbox.setChecked(value)
     checkbox.stateChanged.connect(handler)
 
+# Custom QScrollArea that ignores mouse wheel events
+class Scroller(QtWidgets.QScrollArea):
+    def __init__(self, parent=None):
+        super(Scroller, self).__init__(parent)
+
+    def wheelEvent(self, ev):
+        if ev.type() == QtCore.QEvent.Wheel:
+            ev.ignore()
 
 class MapEditor(QtWidgets.QDialog):
     def __init__(self, primaryScreen, mainWindow):
@@ -111,9 +121,10 @@ class MapEditor(QtWidgets.QDialog):
         self.buildToolbar()
 
         # Build scrollable grid area
-        self.scrollArea = QtWidgets.QScrollArea(self)
+        self.scrollArea = Scroller(self)
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
+        self.scroll_offset = 0
 
         self.gridLayout = QtWidgets.QGridLayout(self.scrollAreaWidgetContents)
         self.gridLayout.setHorizontalSpacing(2)
@@ -148,7 +159,7 @@ class MapEditor(QtWidgets.QDialog):
         QtWidgets.QShortcut(QtGui.QKeySequence("right"), self, self.rightKeyPress)
         QtWidgets.QShortcut(QtGui.QKeySequence("left"), self, self.leftKeyPress)
         QtWidgets.QShortcut(QtGui.QKeySequence("up"), self, self.upKeyPress)
-        QtWidgets.QShortcut(QtGui.QKeySequence("down"), self, self.downKeyPress)
+        QtWidgets.QShortcut(QtGui.QKeySequence("down"), self, self.downKeyPress)\
 
     def moveSelection(self, y_move, x_move):
         if self.selectedPosition is None:
@@ -268,6 +279,20 @@ class MapEditor(QtWidgets.QDialog):
         self.main.saveAction.setEnabled(value)
         self.save_enabled = value
 
+    def wheelEvent(self, event):
+        self.scroll_offset += event.angleDelta().y()
+
+        if -SCROLL_UNITS_PER_CLICK < self.scroll_offset < SCROLL_UNITS_PER_CLICK:
+            return
+
+        num_clicks = self.scroll_offset / SCROLL_UNITS_PER_CLICK
+        self.scroll_offset %= SCROLL_UNITS_PER_CLICK
+
+        if num_clicks > 0:
+            self.increaseZoomLevel(False, num_clicks)
+        else:
+            self.decreaseZoomLevel(False, abs(num_clicks))
+
     def resizeGridView(self, button_size, font_size):
         for y in range(self.rows):
             for x in range(self.columns):
@@ -286,22 +311,32 @@ class MapEditor(QtWidgets.QDialog):
         ZoomLevel.font_size = DEFAULT_FONT_SIZE
         self.resizeGridView(ZoomLevel.button_size, ZoomLevel.font_size)
 
-    def increaseZoomLevel(self):
-        if ((ZoomLevel.button_size >= MAX_BUTTON_SIZE) or
-            (ZoomLevel.font_size >= MAX_FONT_SIZE)):
+    def increaseZoomLevel(self, _, num=1):
+        moved = 0
+        while ((num > 0) and (ZoomLevel.button_size < MAX_BUTTON_SIZE) and
+               (ZoomLevel.font_size < MAX_FONT_SIZE)):
+            ZoomLevel.button_size += BUTTON_ZOOM_INCREMENT
+            ZoomLevel.font_size += FONT_ZOOM_INCREMENT
+            moved += 1
+            num -= 1
+
+        if moved == 0:
             return
 
-        ZoomLevel.button_size += BUTTON_ZOOM_INCREMENT
-        ZoomLevel.font_size += FONT_ZOOM_INCREMENT
         self.resizeGridView(ZoomLevel.button_size, ZoomLevel.font_size)
 
-    def decreaseZoomLevel(self):
-        if ((ZoomLevel.button_size <= MIN_BUTTON_SIZE) or
-            (ZoomLevel.font_size <= MIN_FONT_SIZE)):
+    def decreaseZoomLevel(self, _, num=1):
+        moved = 0
+        while((num > 0) and (ZoomLevel.button_size > MIN_BUTTON_SIZE) and
+              (ZoomLevel.font_size > MIN_FONT_SIZE)):
+            ZoomLevel.button_size -= BUTTON_ZOOM_INCREMENT
+            ZoomLevel.font_size -= FONT_ZOOM_INCREMENT
+            moved += 1
+            num -= 1
+
+        if moved == 0:
             return
 
-        ZoomLevel.button_size -= BUTTON_ZOOM_INCREMENT
-        ZoomLevel.font_size -= FONT_ZOOM_INCREMENT
         self.resizeGridView(ZoomLevel.button_size, ZoomLevel.font_size)
 
     def clearAllTiles(self):
