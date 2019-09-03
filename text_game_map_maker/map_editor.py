@@ -23,9 +23,25 @@ DEFAULT_WINDOW_HEIGHT = 400
 
 NUM_BUTTONS_PER_SCREEN_HEIGHT = 6.0
 
+BUTTON_ZOOM_INCREMENT = 14
+FONT_ZOOM_INCREMENT = 1.0
+
+DEFAULT_BUTTON_SIZE = 180
+DEFAULT_FONT_SIZE = 14.0
+
+MIN_BUTTON_SIZE = 40
+MIN_FONT_SIZE = 4
+
+MAX_BUTTON_SIZE = 400
+MAX_FONT_SIZE = 30
+
 MAP_BUILDER_SAVE_FILE_SUFFIX = "tgmdata"
 
 _tiles = {}
+
+class ZoomLevel(object):
+    button_size = DEFAULT_BUTTON_SIZE
+    font_size = DEFAULT_FONT_SIZE
 
 _move_map = {
     'north': (-1, 0),
@@ -105,6 +121,10 @@ class MapEditor(QtWidgets.QDialog):
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         self.gridAreaLayout.addWidget(self.scrollArea)
 
+        self.font = QtGui.QFont()
+        self.font.setPointSize(ZoomLevel.font_size)
+        self.font.setFamily("Arial")
+
         self.mainLayout.addLayout(self.buttonAreaLayout)
         self.mainLayout.addLayout(self.gridAreaLayout)
         self.selectedPosition = None
@@ -113,13 +133,13 @@ class MapEditor(QtWidgets.QDialog):
         self.rows = NUM_BUTTON_ROWS
         self.columns = NUM_BUTTON_COLUMNS
 
-        self.button_size = int(self.screen_height / NUM_BUTTONS_PER_SCREEN_HEIGHT)
-
         for i in range(self.rows):
             for j in range(self.columns):
                 btn = tile_button.TileButton(self)
+
+                btn.setFont(self.font)
                 btn.setAttribute(QtCore.Qt.WA_StyledBackground)
-                btn.setFixedSize(self.button_size, self.button_size)
+                btn.setFixedSize(ZoomLevel.button_size, ZoomLevel.button_size)
                 btn.calculate_dimensions()
                 btn.installEventFilter(btn)
                 self.gridLayout.addWidget(btn, i, j)
@@ -247,6 +267,42 @@ class MapEditor(QtWidgets.QDialog):
         self.saveButton.setEnabled(value)
         self.main.saveAction.setEnabled(value)
         self.save_enabled = value
+
+    def resizeGridView(self, button_size, font_size):
+        for y in range(self.rows):
+            for x in range(self.columns):
+                btn = self.buttonAtPosition(y, x)
+
+                self.font.setPointSize(font_size)
+                btn.setFont(self.font)
+                btn.setFixedSize(button_size, button_size)
+                btn.calculate_dimensions()
+
+                if (y, x) in _tiles:
+                    btn.redrawDoors()
+
+    def setDefaultZoomLevel(self):
+        ZoomLevel.button_size = DEFAULT_BUTTON_SIZE
+        ZoomLevel.font_size = DEFAULT_FONT_SIZE
+        self.resizeGridView(ZoomLevel.button_size, ZoomLevel.font_size)
+
+    def increaseZoomLevel(self):
+        if ((ZoomLevel.button_size >= MAX_BUTTON_SIZE) or
+            (ZoomLevel.font_size >= MAX_FONT_SIZE)):
+            return
+
+        ZoomLevel.button_size += BUTTON_ZOOM_INCREMENT
+        ZoomLevel.font_size += FONT_ZOOM_INCREMENT
+        self.resizeGridView(ZoomLevel.button_size, ZoomLevel.font_size)
+
+    def decreaseZoomLevel(self):
+        if ((ZoomLevel.button_size <= MIN_BUTTON_SIZE) or
+            (ZoomLevel.font_size <= MIN_FONT_SIZE)):
+            return
+
+        ZoomLevel.button_size -= BUTTON_ZOOM_INCREMENT
+        ZoomLevel.font_size -= FONT_ZOOM_INCREMENT
+        self.resizeGridView(ZoomLevel.button_size, ZoomLevel.font_size)
 
     def clearAllTiles(self):
         for pos in list(_tiles.keys()):

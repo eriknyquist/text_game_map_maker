@@ -82,6 +82,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.startTileAction.setStatusTip("Set start tile")
         self.startTileAction.triggered.connect(self.widget.setStartTile)
 
+        # View  menu actions
+        self.zoomInAction = QtWidgets.QAction("Zoom in", self)
+        self.zoomInAction.setShortcut("=")
+        self.zoomInAction.setStatusTip("Increase magnification level of tile grid view")
+        self.zoomInAction.triggered.connect(self.widget.increaseZoomLevel)
+
+        self.zoomOutAction = QtWidgets.QAction("Zoom out", self)
+        self.zoomOutAction.setShortcut("-")
+        self.zoomOutAction.setStatusTip("Decrease magnification level of tile grid view")
+        self.zoomOutAction.triggered.connect(self.widget.decreaseZoomLevel)
+
+        self.zoomResetAction = QtWidgets.QAction("Reset Zoom", self)
+        self.zoomResetAction.setShortcut("Ctrl+=")
+        self.zoomResetAction.setStatusTip("Reset magnification level of tile grid view to default")
+        self.zoomResetAction.triggered.connect(self.widget.setDefaultZoomLevel)
+
         # Help menu actions
         self.aboutAction = QtWidgets.QAction("About", self)
         self.aboutAction.triggered.connect(self.showAboutWindow)
@@ -103,6 +119,11 @@ class MainWindow(QtWidgets.QMainWindow):
         editMenu.addAction(self.editDoorsAction)
         editMenu.addAction(self.editWallsAction)
         editMenu.addAction(self.startTileAction)
+
+        viewMenu = menu.addMenu("View")
+        viewMenu.addAction(self.zoomInAction)
+        viewMenu.addAction(self.zoomOutAction)
+        viewMenu.addAction(self.zoomResetAction)
 
         helpMenu = menu.addMenu("Help")
         helpMenu.addAction(self.aboutAction)
