@@ -451,6 +451,13 @@ class MapEditor(QtWidgets.QDialog):
         msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
         msg.exec_()
 
+    def tile_id_in_map_data(self, tile_list, tile_id):
+        for tiledata in tile_list:
+            if tiledata["tile_id"] == tile_id:
+                return True
+
+        return False
+
     def serialize(self):
         attrs = {}
         start_tile = _tiles[self.startTilePosition]
@@ -458,7 +465,27 @@ class MapEditor(QtWidgets.QDialog):
         attrs[player.OBJECT_VERSION_KEY] = obj_version
         attrs[player.TILES_KEY] = tile.crawler(start_tile)
         attrs[player.START_TILE_KEY] = start_tile.tile_id
-        attrs['positions'] = {_tiles[pos].tile_id: list(pos) for pos in _tiles}
+        attrs['positions'] = {}
+        attrs['islands'] = []
+
+        for pos in _tiles:
+            tileobj = _tiles[pos]
+
+            # Save tile position
+            attrs['positions'][tileobj.tile_id] = list(pos)
+
+            # If this tile wasn't caught by the crawler, then it's part of an island--
+            # Run the crawler again with this tile as the start tile
+            in_tile_map = self.tile_id_in_map_data(attrs[player.TILES_KEY], tileobj.tile_id)
+            in_islands = False
+
+            for tile_list in attrs['islands']:
+                if self.tile_id_in_map_data(tile_list, tileobj.tile_id):
+                    in_islands = True
+                    break
+
+            if (not in_tile_map) and (not in_islands):
+                attrs['islands'].append(tile.crawler(tileobj))
 
         return attrs
 
@@ -481,6 +508,14 @@ class MapEditor(QtWidgets.QDialog):
         start_tile = tile.builder(attrs[player.TILES_KEY],
                                   attrs[player.START_TILE_KEY],
                                   attrs[player.OBJECT_VERSION_KEY])
+
+        if 'islands' in attrs:
+            # Re-build island tiles
+            for tile_list in attrs['islands']:
+                tiledata = tile_list[0]
+                tile.builder(tile_list, tiledata["tile_id"],
+                             attrs[player.OBJECT_VERSION_KEY],
+                             clear_old_tiles=False)
 
         self.clearAllTiles()
         self.drawTileMap(start_tile, attrs['positions'])
