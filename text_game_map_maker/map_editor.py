@@ -5,15 +5,14 @@ import traceback
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-from text_game_map_maker import forms, scrollarea
+from text_game_map_maker import forms, scrollarea, tgmdata
 from text_game_map_maker.door_editor import DoorEditor
 from text_game_map_maker import tile_button
 from text_game_map_maker.qt_auto_form import QtAutoForm
 
 from text_game_maker.tile import tile
 from text_game_maker.player import player
-from text_game_maker.game_objects.base import serialize, deserialize
-from text_game_maker.game_objects import __object_model_version__ as obj_version
+
 
 NUM_BUTTON_ROWS = 50
 NUM_BUTTON_COLUMNS = 50
@@ -371,35 +370,7 @@ class MapEditor(QtWidgets.QDialog):
         return False
 
     def serialize(self):
-        attrs = {}
-        start_tile = _tiles[self.startTilePosition]
-
-        attrs[player.OBJECT_VERSION_KEY] = obj_version
-        attrs[player.TILES_KEY] = tile.crawler(start_tile)
-        attrs[player.START_TILE_KEY] = start_tile.tile_id
-        attrs['positions'] = {}
-        attrs['islands'] = []
-
-        for pos in _tiles:
-            tileobj = _tiles[pos]
-
-            # Save tile position
-            attrs['positions'][tileobj.tile_id] = list(pos)
-
-            # If this tile wasn't caught by the crawler, then it's part of an island--
-            # Run the crawler again with this tile as the start tile
-            in_tile_map = self.tile_id_in_map_data(attrs[player.TILES_KEY], tileobj.tile_id)
-            in_islands = False
-
-            for tile_list in attrs['islands']:
-                if self.tile_id_in_map_data(tile_list, tileobj.tile_id):
-                    in_islands = True
-                    break
-
-            if (not in_tile_map) and (not in_islands):
-                attrs['islands'].append(tile.crawler(tileobj))
-
-        return attrs
+        return tgmdata.serialize(_tiles[self.startTilePosition], _tiles)
 
     def drawTileMap(self, start_tile, positions):
         for tile_id in positions:
@@ -417,18 +388,7 @@ class MapEditor(QtWidgets.QDialog):
             button.redrawDoors()
 
     def deserialize(self, attrs):
-        start_tile = tile.builder(attrs[player.TILES_KEY],
-                                  attrs[player.START_TILE_KEY],
-                                  attrs[player.OBJECT_VERSION_KEY])
-
-        if 'islands' in attrs:
-            # Re-build island tiles
-            for tile_list in attrs['islands']:
-                tiledata = tile_list[0]
-                tile.builder(tile_list, tiledata["tile_id"],
-                             attrs[player.OBJECT_VERSION_KEY],
-                             clear_old_tiles=False)
-
+        start_tile = tgmdata.deserialize(attrs)
         self.clearAllTiles()
         self.drawTileMap(start_tile, attrs['positions'])
         self.startTilePosition = tuple(attrs['positions'][start_tile.tile_id])
