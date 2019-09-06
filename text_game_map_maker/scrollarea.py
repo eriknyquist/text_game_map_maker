@@ -1,17 +1,33 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# Custom QScrollArea that ignores mouse wheel events
+
 class ScrollArea(QtWidgets.QScrollArea):
-    LEFT = 0
-    RIGHT = 1
-    TOP = 2
-    BOTTOM = 3
+    """
+    Custom QScrollArea that ignores mouse wheel events, and implements custom
+    custom scrolling behaviour where content can be scrolled in a particular
+    direction by moving the cursor to the corresponding inner edge of the scrollarea
+    """
+
+    LEFT = 0    # Left side of scrollarea
+    RIGHT = 1   # Right side of scrollarea
+    TOP = 2     # Top side of scrollarea
+    BOTTOM = 3  # Bottom side of scroll area
 
     def __init__(self, parent=None):
         super(ScrollArea, self).__init__(parent)
+        # Size (in pixels) of border around the inside edge of the scrollarea.
+        # When the cursor enters the border on the top/bottom/left/right side of
+        # the scrollarea, we will auto-scroll the contents in that direction,
+        # until the cursor leaves the border area.
         self.border_width = 50
+
+        # Time (in milliseconds) between scrollbar updates when auto-scrolling.
         self.timer_delay_ms = 33
+
+        # When auto-scrolling, scrollbars are incremented/decremented by this
+        # amount on each scrollbar update. Determined purely by trial-and-error.
         self.increment = 15
+
         self.scroll_directions = []
 
         self.mouse_timer = QtCore.QTimer(self)
