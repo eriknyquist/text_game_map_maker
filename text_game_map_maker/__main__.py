@@ -150,7 +150,7 @@ class MainWindow(QtWidgets.QMainWindow):
         helpMenu.addAction(self.howToAction)
 
         # Set initial selection position
-        self.widget.setSelectedPosition(self.widget.buttonAtPosition(0, 0))
+        #self.widget.setSelectedPosition(self.widget.buttonAtPosition(0, 0))
 
         # Saving is disabled initially
         self.widget.setSaveEnabled(False)

@@ -355,8 +355,16 @@ class MapEditor(QtWidgets.QDialog):
             del _tiles[pos]
             button.setStyle(selected=False, start=False)
 
+        for pos in self.selectedPositions + [self.selectedPosition]:
+            if not pos:
+                continue
+
+            button = self.buttonAtPosition(*pos)
+            button.setStyle()
+
         self.startTilePosition = None
-        self.setSelectedPosition(self.buttonAtPosition(0, 0))
+        self.selectedPosition = None
+        self.selectedPositions = []
 
     def yesNoDialog(self, header="", msg="Are you sure?"):
         reply = QtWidgets.QMessageBox.question(self, header, msg,
@@ -545,10 +553,7 @@ class MapEditor(QtWidgets.QDialog):
         self.deserializeFromSaveFile(attrs)
 
     def deleteButtonClicked(self):
-        tiles = []
-        for pos in self.selectedPositions + [self.selectedPosition]:
-            if pos in _tiles:
-                tiles.append(pos)
+        tiles = self.selectedPositions()
 
         if not tiles:
             self.errorDialog("Unable to delete tile", "No selected tiles")
@@ -873,7 +878,8 @@ class MapEditor(QtWidgets.QDialog):
             b = self.buttonAtPosition(*pos)
             is_start = pos == self.startTilePosition
             b.setStyle(selected=False, start=is_start)
-            self.selectedPositions = []
+
+        self.selectedPositions = []
 
         if self.selectedPosition is not None:
             oldstart = self.selectedPosition == self.startTilePosition
@@ -881,7 +887,6 @@ class MapEditor(QtWidgets.QDialog):
             oldbutton.setStyle(selected=False, start=oldstart)
 
         self.selectedPosition = self.getButtonPosition(button)
-
         newstart = self.selectedPosition == self.startTilePosition
         newfilled = self.selectedPosition in _tiles
         button.setStyle(selected=True, start=newstart)
@@ -908,6 +913,9 @@ class MapEditor(QtWidgets.QDialog):
             self.selectedPosition = None
 
         pos = self.getButtonPosition(button)
+        if pos in self.selectedPositions:
+            return
+
         self.selectedPositions.append(pos)
         is_start = pos == self.startTilePosition
         button.setStyle(selected=True, start=is_start)
@@ -1074,6 +1082,9 @@ class MapEditor(QtWidgets.QDialog):
             # Handle remaining attributes
             for attr in src_tile.__dict__:
                 if attr in directions:
+                    continue
+
+                if attr == "tile_id":
                     continue
 
                 setattr(dest_tile, attr, getattr(src_tile, attr))
