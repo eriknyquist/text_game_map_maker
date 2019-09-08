@@ -290,13 +290,7 @@ class MapEditor(QtWidgets.QDialog):
         self.save_enabled = value
 
     def wheelEvent(self, event):
-        self.scroll_offset += event.angleDelta().y()
-
-        if -SCROLL_UNITS_PER_CLICK < self.scroll_offset < SCROLL_UNITS_PER_CLICK:
-            return
-
-        num_clicks = self.scroll_offset / SCROLL_UNITS_PER_CLICK
-        self.scroll_offset %= SCROLL_UNITS_PER_CLICK
+        num_clicks = event.angleDelta().y() / SCROLL_UNITS_PER_CLICK
 
         if num_clicks > 0:
             self.increaseZoomLevel(False, num_clicks)
