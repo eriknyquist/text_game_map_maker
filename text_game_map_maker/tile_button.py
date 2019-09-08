@@ -23,6 +23,13 @@ class BorderType(object):
 
 
 class TileButton(QtWidgets.QPushButton):
+    # Will be set by calculate_dimensions
+    doorwidth = 0
+    borderwidth = 0
+    border_lines = []
+    walls_map = {}
+    doors_map = {}
+
     def __init__(self, parent=None):
         super(TileButton, self).__init__(parent)
         self.doors = []
@@ -30,16 +37,8 @@ class TileButton(QtWidgets.QPushButton):
         self.main = parent
         self.border_type = BorderType.EMPTY
 
-        # Will be set by calculate_dimensions
-        self.doorwidth = None
-        self.borderwidth = None
-        self.border_lines = None
-        self.walls_map = None
-        self.doors_map = None
-
-    def calculate_dimensions(self):
-        width = self.frameGeometry().width()
-        height = self.frameGeometry().height()
+    @classmethod
+    def set_dimensions(cls, width, height):
         borderdelta = tile_border_pixels * 2
 
         qwidth = (width - borderdelta) / 4.0
@@ -48,24 +47,24 @@ class TileButton(QtWidgets.QPushButton):
         adjusted_qheight = qheight + borderdelta
         adjusted_qwidth = qwidth + borderdelta
 
-        self.doorwidth = qwidth
-        self.borderwidth = max(2, width / 16)
+        cls.doorwidth = qwidth
+        cls.borderwidth = max(2, width / 16)
 
-        self.border_lines = [
+        cls.border_lines = [
             (0, width, 0, 0),
             (height, width, height, 0),
             (height, 0, 0, 0),
             (height, width, 0, width)
         ]
 
-        self.walls_map = {
+        cls.walls_map = {
             "north": (0, 0, height, 0),
             "south": (0, width, height, width),
             "east": (height, 0, height, width),
             "west": (0, 0, 0, width)
         }
 
-        self.doors_map = {
+        cls.doors_map = {
             "north": (adjusted_qheight, 0, height - adjusted_qheight, 0),
             "south": (adjusted_qheight, width, height - adjusted_qheight, width),
             "east": (height, adjusted_qwidth, height, width - adjusted_qwidth),

@@ -136,6 +136,8 @@ class MapEditor(QtWidgets.QDialog):
         self.rows = NUM_BUTTON_ROWS
         self.columns = NUM_BUTTON_COLUMNS
 
+        tile_button.TileButton.set_dimensions(ZoomLevel.button_size,
+                                              ZoomLevel.button_size)
         for i in range(self.rows):
             for j in range(self.columns):
                 btn = tile_button.TileButton(self)
@@ -143,7 +145,6 @@ class MapEditor(QtWidgets.QDialog):
                 btn.setFont(self.font)
                 btn.setAttribute(QtCore.Qt.WA_StyledBackground)
                 btn.setFixedSize(ZoomLevel.button_size, ZoomLevel.button_size)
-                btn.calculate_dimensions()
                 btn.installEventFilter(btn)
                 self.gridLayout.addWidget(btn, i, j)
 
@@ -303,6 +304,8 @@ class MapEditor(QtWidgets.QDialog):
             self.decreaseZoomLevel(False, abs(num_clicks))
 
     def resizeGridView(self, button_size, font_size):
+        tile_button.TileButton.set_dimensions(button_size, button_size)
+
         for y in range(self.rows):
             for x in range(self.columns):
                 btn = self.buttonAtPosition(y, x)
@@ -310,7 +313,6 @@ class MapEditor(QtWidgets.QDialog):
                 self.font.setPointSize(font_size)
                 btn.setFont(self.font)
                 btn.setFixedSize(button_size, button_size)
-                btn.calculate_dimensions()
 
                 if (y, x) in _tiles:
                     btn.redrawDoors()
