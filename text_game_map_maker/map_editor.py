@@ -129,6 +129,7 @@ class MapEditor(QtWidgets.QDialog):
 
         self.mainLayout.addLayout(self.buttonAreaLayout)
         self.mainLayout.addLayout(self.gridAreaLayout)
+        self.selectedPositions = []
         self.selectedPosition = None
         self.startTilePosition = None
 
@@ -186,14 +187,18 @@ class MapEditor(QtWidgets.QDialog):
         self.clearButton = QtWidgets.QPushButton()
         self.doorButton = QtWidgets.QPushButton()
         self.wallButton = QtWidgets.QPushButton()
+        self.moveButton = QtWidgets.QPushButton()
+        self.copyButton = QtWidgets.QPushButton()
         self.saveButton = QtWidgets.QPushButton()
         self.loadButton = QtWidgets.QPushButton()
         self.loadFromSavedGameButton = QtWidgets.QPushButton()
 
-        self.deleteButton.setText("Delete tile")
+        self.deleteButton.setText("Delete tiles")
         self.clearButton.setText("Clear all tiles")
         self.doorButton.setText("Edit doors")
         self.wallButton.setText("Edit walls")
+        self.moveButton.setText("Move tiles")
+        self.copyButton.setText("Copy Tiles")
         self.saveButton.setText("Save to file")
         self.loadButton.setText("Load from file")
         self.loadFromSavedGameButton.setText("Load map from saved game")
@@ -202,6 +207,8 @@ class MapEditor(QtWidgets.QDialog):
         self.clearButton.clicked.connect(self.clearButtonClicked)
         self.doorButton.clicked.connect(self.doorButtonClicked)
         self.wallButton.clicked.connect(self.wallButtonClicked)
+        self.moveButton.clicked.connect(self.moveButtonClicked)
+        self.copyButton.clicked.connect(self.copyButtonClicked)
         self.saveButton.clicked.connect(self.saveButtonClicked)
         self.loadButton.clicked.connect(self.loadButtonClicked)
         self.loadFromSavedGameButton.clicked.connect(self.loadFromSavedGameButtonClicked)
@@ -225,20 +232,27 @@ class MapEditor(QtWidgets.QDialog):
         self.deleteButton.setEnabled(False)
 
         tileButtonLayout = QtWidgets.QHBoxLayout()
-        tileButtonLayout.addWidget(self.deleteButton)
-        tileButtonLayout.addWidget(self.clearButton)
         tileButtonLayout.addWidget(self.doorButton)
         tileButtonLayout.addWidget(self.wallButton)
         tileButtonLayout.addLayout(checkBoxLayout)
-        tileButtonGroup = QtWidgets.QGroupBox("Edit selected tile")
+        tileButtonGroup = QtWidgets.QGroupBox("Edit")
         tileButtonGroup.setAlignment(QtCore.Qt.AlignCenter)
         tileButtonGroup.setLayout(tileButtonLayout)
+
+        moveButtonLayout = QtWidgets.QHBoxLayout()
+        moveButtonLayout.addWidget(self.moveButton)
+        moveButtonLayout.addWidget(self.copyButton)
+        moveButtonLayout.addWidget(self.deleteButton)
+        moveButtonLayout.addWidget(self.clearButton)
+        moveButtonGroup = QtWidgets.QGroupBox("Tools")
+        moveButtonGroup.setAlignment(QtCore.Qt.AlignCenter)
+        moveButtonGroup.setLayout(moveButtonLayout)
 
         fileButtonLayout = QtWidgets.QHBoxLayout()
         fileButtonLayout.addWidget(self.saveButton)
         fileButtonLayout.addWidget(self.loadButton)
         fileButtonLayout.addWidget(self.loadFromSavedGameButton)
-        fileButtonGroup = QtWidgets.QGroupBox("Load/save file")
+        fileButtonGroup = QtWidgets.QGroupBox("File")
         fileButtonGroup.setAlignment(QtCore.Qt.AlignCenter)
         fileButtonGroup.setLayout(fileButtonLayout)
 
@@ -254,6 +268,7 @@ class MapEditor(QtWidgets.QDialog):
 
         self.buttonAreaLayout.addWidget(compassGroup)
         self.buttonAreaLayout.addWidget(tileButtonGroup)
+        self.buttonAreaLayout.addWidget(moveButtonGroup)
         self.buttonAreaLayout.addWidget(fileButtonGroup)
 
     def warningBeforeQuit(self):
@@ -531,24 +546,40 @@ class MapEditor(QtWidgets.QDialog):
         self.deserializeFromSaveFile(attrs)
 
     def deleteButtonClicked(self):
-        if self.selectedPosition not in _tiles:
-            self.errorDialog("Unable to delete tile", "No tile in this space "
-                             "to delete")
+        tiles = []
+        for pos in self.selectedPositions + [self.selectedPosition]:
+            if pos in _tiles:
+                tiles.append(pos)
+
+        if not tiles:
+            self.errorDialog("Unable to delete tile", "No selected tiles")
             return
 
-        tileobj = _tiles[self.selectedPosition]
-        button = self.buttonAtPosition(*self.selectedPosition)
+        if len(tiles) == 1:
+            tileobj = _tiles[self.selectedPosition]
+            msg = ("Are you sure you want to delete this tile (tile ID is '%s')"
+                   % tileobj.tile_id)
+        else:
+            msg = "Are you sure you want to delete %d tiles?" % len(tiles)
 
-        reply = self.yesNoDialog("Are you sure?", "Are you sure you want to "
-                                "delete this tile (tile ID is '%s')" % (tileobj.tile_id))
+        reply = self.yesNoDialog("Are you sure?", msg)
         if not reply:
             return
 
-        self.disconnectSurroundingTiles(tileobj, *self.selectedPosition)
-        del _tiles[self.selectedPosition]
+        for pos in tiles:
+            self.deleteTile(pos)
+
+        self.setSelectedPosition(self.buttonAtPosition(*tiles[-1]))
+
+    def deleteTile(self, pos):
+        button = self.buttonAtPosition(*pos)
+        tileobj = self.tileAtPosition(*pos)
+
+        self.disconnectSurroundingTiles(tileobj, *pos)
+        del _tiles[pos]
         button.setText("")
 
-        if self.startTilePosition == self.selectedPosition:
+        if self.startTilePosition == pos:
             self.startTilePosition = None
 
         button.setStyle(selected=False, start=False)
@@ -561,7 +592,6 @@ class MapEditor(QtWidgets.QDialog):
         else:
             # If yes, disable button for clearing all tiles
             self.clearButton.setEnabled(False)
-            self.setSelectedPosition(button)
 
     def clearButtonClicked(self):
         reply = self.yesNoDialog("Really clear all tiles?", "Are you sure you "
@@ -572,6 +602,12 @@ class MapEditor(QtWidgets.QDialog):
 
         self.clearAllTiles()
         self.clearButton.setEnabled(False)
+
+    def moveButtonClicked(self):
+        pass
+
+    def copyButtonClicked(self):
+        pass
 
     def doorButtonClicked(self):
         tileobj = _tiles[self.selectedPosition]
@@ -762,7 +798,37 @@ class MapEditor(QtWidgets.QDialog):
 
         return north, south, east, west
 
+    def enableSelectionDependantItems(self):
+        exactly_one = self.selectedPosition in _tiles
+        one_or_more = exactly_one
+
+        if not exactly_one:
+            for pos in self.selectedPositions:
+                if pos in _tiles:
+                    one_or_more = True
+                    break
+
+        # These items require one or more tiles to be selected
+        for obj in [self.moveButton, self.copyButton, self.main.copyTileAction,
+                    self.main.moveTileAction, self.deleteButton,
+                    self.main.deleteTileAction]:
+            if obj.isEnabled != one_or_more:
+                obj.setEnabled(one_or_more)
+
+        # These items require exactly one tile to be selected
+        for obj in [self.doorButton, self.wallButton, self.main.editDoorsAction,
+                    self.main.editWallsAction]:
+            if obj.isEnabled() != exactly_one:
+                obj.setEnabled(exactly_one)
+
     def setSelectedPosition(self, button):
+        # De-select group if any is selected
+        for pos in self.selectedPositions:
+            b = self.buttonAtPosition(*pos)
+            is_start = pos == self.startTilePosition
+            b.setStyle(selected=False, start=is_start)
+            self.selectedPositions = []
+
         if self.selectedPosition is not None:
             oldstart = self.selectedPosition == self.startTilePosition
             oldbutton = self.buttonAtPosition(*self.selectedPosition)
@@ -786,20 +852,30 @@ class MapEditor(QtWidgets.QDialog):
             _silent_checkbox_set(self.startTileCheckBox, False, self.setStartTile)
             self.startTileCheckBox.setEnabled(False)
 
-        for obj in [self.doorButton, self.deleteButton, self.wallButton,
-                    self.main.editDoorsAction, self.main.editWallsAction,
-                    self.main.deleteTileAction]:
-            if obj.isEnabled() != filled:
-                obj.setEnabled(filled)
-
         button.setFocus(True)
         self.scrollArea.ensureWidgetVisible(button)
+        self.enableSelectionDependantItems()
+
+    def addSelectedPosition(self, button):
+        if self.selectedPosition is not None:
+            self.selectedPositions.append(self.selectedPosition)
+            self.selectedPosition = None
+
+        pos = self.getButtonPosition(button)
+        self.selectedPositions.append(pos)
+        is_start = pos == self.startTilePosition
+        button.setStyle(selected=True, start=is_start)
+        self.enableSelectionDependantItems()
 
     def onMiddleClick(self, button):
         pass
 
     def onRightClick(self, button):
-        self.setSelectedPosition(button)
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+        if modifiers == QtCore.Qt.ShiftModifier:
+            self.addSelectedPosition(button)
+        else:
+            self.setSelectedPosition(button)
 
     def runTileBuilderDialog(self, position):
         settings = forms.TileSettings()

@@ -72,10 +72,25 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editWallsAction.setStatusTip("Add/edit walls on selected tile")
         self.editWallsAction.triggered.connect(self.widget.wallButtonClicked)
 
-        self.deleteTileAction = QtWidgets.QAction("Delete selected tile", self)
+        self.deleteTileAction = QtWidgets.QAction("Delete selected tiles", self)
         self.deleteTileAction.setShortcut("Ctrl+R")
-        self.deleteTileAction.setStatusTip("Delete selected tile")
+        self.deleteTileAction.setStatusTip("Delete selected tiles")
         self.deleteTileAction.triggered.connect(self.widget.deleteButtonClicked)
+
+        self.clearAction = QtWidgets.QAction("Clear all tiles", self)
+        self.clearAction.setShortcut("Ctrl+X")
+        self.clearAction.setStatusTip("Clear all tiles")
+        self.clearAction.triggered.connect(self.widget.clearButtonClicked)
+
+        self.copyTileAction = QtWidgets.QAction("Copy selected tiles", self)
+        self.copyTileAction.setShortcut("Ctrl+C")
+        self.copyTileAction.setStatusTip("Copy selected tiles")
+        self.copyTileAction.triggered.connect(self.widget.copyButtonClicked)
+
+        self.moveTileAction = QtWidgets.QAction("Move selected tiles", self)
+        self.moveTileAction.setShortcut("Ctrl+M")
+        self.moveTileAction.setStatusTip("Move selected tiles")
+        self.moveTileAction.triggered.connect(self.widget.moveButtonClicked)
 
         self.startTileAction = QtWidgets.QAction("Set selected tile as start tile", self)
         self.startTileAction.setShortcut("Ctrl+T")
@@ -115,10 +130,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
         editMenu = menu.addMenu("Edit")
         editMenu.addAction(self.editTileAction)
-        editMenu.addAction(self.deleteTileAction)
         editMenu.addAction(self.editDoorsAction)
         editMenu.addAction(self.editWallsAction)
         editMenu.addAction(self.startTileAction)
+
+        toolMenu = menu.addMenu("Tools")
+        toolMenu.addAction(self.moveTileAction)
+        toolMenu.addAction(self.copyTileAction)
+        toolMenu.addAction(self.deleteTileAction)
+        toolMenu.addAction(self.clearAction)
 
         viewMenu = menu.addMenu("View")
         viewMenu.addAction(self.zoomInAction)
