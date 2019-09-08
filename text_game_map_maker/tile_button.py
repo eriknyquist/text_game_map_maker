@@ -8,6 +8,7 @@ selected_wall_colour = QtCore.Qt.red
 keypad_door_colour = QtCore.Qt.blue
 
 tile_border_pixels = 4
+mask_tile_colour = '#858585'
 start_tile_colour = '#6bfa75'
 tile_border_colour = '#000000'
 selected_border_colour = '#ff0000'
@@ -71,26 +72,34 @@ class TileButton(QtWidgets.QPushButton):
             "west": (0, adjusted_qwidth, 0, width - adjusted_qwidth)
         }
 
-    def setStyle(self, selected=False, start=False):
-        border = ""
-        bordercolour = selected_wall_colour if selected else wall_colour
+    def enterEvent(self, event):
+        if self.main.tracking_tile_button_enter:
+            self.main.onTileButtonEnter(self)
 
-        if start:
-            colour = "background-color: %s" % start_tile_colour
+    def setStyle(self, selected=False, start=False, selection_mask=False):
+        if selection_mask:
+            colour = "background-color: %s" % mask_tile_colour
+            self.setStyleSheet(colour)
         else:
-            colour = "background-color: None"
+            border = ""
+            bordercolour = selected_wall_colour if selected else wall_colour
 
-        self.setStyleSheet(colour)
+            if start:
+                colour = "background-color: %s" % start_tile_colour
+            else:
+                colour = "background-color: None"
 
-        pos = self.main.getButtonPosition(self)
-        tileobj = self.main.tileAtPosition(*pos)
+            self.setStyleSheet(colour)
 
-        if selected:
-            self.border_type = BorderType.SELECTED
-        elif tileobj is None:
-            self.border_type = BorderType.EMPTY
-        else:
-            self.border_type = BorderType.FILLED
+            pos = self.main.getButtonPosition(self)
+            tileobj = self.main.tileAtPosition(*pos)
+
+            if selected:
+                self.border_type = BorderType.SELECTED
+            elif tileobj is None:
+                self.border_type = BorderType.EMPTY
+            else:
+                self.border_type = BorderType.FILLED
 
         self.update()
 

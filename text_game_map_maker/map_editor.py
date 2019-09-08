@@ -100,6 +100,9 @@ class MapEditor(QtWidgets.QDialog):
         self.primary_screen = primaryScreen
         self.loaded_file = None
         self.save_enabled = True
+        self.copying = False
+        self.tracking_tile_button_enter = False
+        self.group_mask = []
 
         screensize = self.primary_screen.size()
         self.screen_width = screensize.width()
@@ -589,6 +592,47 @@ class MapEditor(QtWidgets.QDialog):
             # If yes, disable button for clearing all tiles
             self.clearButton.setEnabled(False)
 
+    def getSelectedPositions(self):
+        positions = [p for p in self.selectedPositions if p in _tiles]
+        if self.selectedPosition in _tiles:
+            positions.append(self.selectedPosition)
+
+        return positions
+
+    def onTileButtonEnter(self, button):
+        old_pos = self.group_mask[0]
+        new_pos = self.getButtonPosition(button)
+
+        delta_y = new_pos[0] - old_pos[0]
+        delta_x = new_pos[1] - old_pos[1]
+
+        # Calculate positions for new selection mask
+        new_mask = []
+        for pos in self.group_mask:
+            new_mask.append((pos[0] + delta_y, pos[1] + delta_x))
+
+        # Re-draw old selection mask to put tiles back to normal
+        for pos in self.group_mask:
+            if pos not in new_mask:
+                b = self.buttonAtPosition(*pos)
+                if not b:
+                    continue
+
+                is_selected = (pos == self.selectedPosition) or (pos in self.selectedPositions)
+                is_start = pos == self.startTilePosition
+                b.setStyle(selected=is_selected, start=is_start)
+
+        # Draw selection mask at new position
+        for pos in new_mask:
+            if pos not in self.group_mask:
+                b = self.buttonAtPosition(*pos)
+                if not b:
+                    continue
+
+                b.setStyle(selection_mask=True)
+
+        self.group_mask = new_mask
+
     def clearButtonClicked(self):
         reply = self.yesNoDialog("Really clear all tiles?", "Are you sure you "
                                  "want to clear all tiles? you will lose any unsaved data.")
@@ -600,10 +644,16 @@ class MapEditor(QtWidgets.QDialog):
         self.clearButton.setEnabled(False)
 
     def moveButtonClicked(self):
-        pass
+        self.copying = False
+        self.tracking_tile_button_enter = True
 
     def copyButtonClicked(self):
-        pass
+        self.copying = True
+        # Enable tracking of tile button enter events
+        self.tracking_tile_button_enter = True
+
+        # Get positions of all the tiles we need to copy
+        self.group_mask = self.getSelectedPositions()
 
     def doorButtonClicked(self):
         tileobj = _tiles[self.selectedPosition]
@@ -863,16 +913,6 @@ class MapEditor(QtWidgets.QDialog):
         button.setStyle(selected=True, start=is_start)
         self.enableSelectionDependantItems()
 
-    def onMiddleClick(self, button):
-        pass
-
-    def onRightClick(self, button):
-        modifiers = QtWidgets.QApplication.keyboardModifiers()
-        if modifiers == QtCore.Qt.ShiftModifier:
-            self.addSelectedPosition(button)
-        else:
-            self.setSelectedPosition(button)
-
     def runTileBuilderDialog(self, position):
         settings = forms.TileSettings()
 
@@ -995,7 +1035,82 @@ class MapEditor(QtWidgets.QDialog):
 
         self.onLeftClick(self.buttonAtPosition(*self.selectedPosition))
 
+    def moveSelectionMask(self):
+        pass
+
+    def copySelectionMask(self):
+        # Get positions of all the original tiles from the selection mask
+        orig_positions = self.getSelectedPositions()
+
+        # Create all the new tiles
+        new_tiles = []
+        for i in range(len(orig_positions)):
+            src_tile = self.tileAtPosition(*orig_positions[i])
+            tileobj = tile.Tile()
+            tileobj.set_tile_id(src_tile.tile_id + "_copy")
+            new_tiles.append(tileobj)
+
+        # Populate & connect all the new tiles
+        for i in range(len(orig_positions)):
+            src_tile = self.tileAtPosition(*orig_positions[i])
+            dest_tile = new_tiles[i]
+            directions = ['north', 'south', 'east', 'west']
+
+            # Handle new tile connections
+            for attr in directions:
+                src_adj = getattr(src_tile, attr)
+                if src_adj is None:
+                    setattr(dest_tile, attr, None)
+                    continue
+
+                copy_name = src_adj.tile_id + "_copy"
+                dest_adj = tile.get_tile_by_id(copy_name)
+                if dest_adj is None:
+                    setattr(dest_tile, attr, None)
+                    continue
+
+                setattr(dest_tile, attr, dest_adj)
+
+            # Handle remaining attributes
+            for attr in src_tile.__dict__:
+                if attr in directions:
+                    continue
+
+                setattr(dest_tile, attr, getattr(src_tile, attr))
+
+            _tiles[self.group_mask[i]] = dest_tile
+            button = self.buttonAtPosition(*self.group_mask[i])
+            button.setText(dest_tile.tile_id)
+            button.setStyle()
+
+    def setSelectionMask(self):
+        if self.copying:
+            self.copySelectionMask()
+        else:
+            self.moveSelectionMask()
+
+        self.tracking_tile_button_enter = False
+        self.group_mask = False
+
+    def onMiddleClick(self, button):
+        pass
+
+    def onRightClick(self, button):
+        if self.group_mask:
+            self.setSelectionMask()
+            return
+
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+        if modifiers == QtCore.Qt.ShiftModifier:
+            self.addSelectedPosition(button)
+        else:
+            self.setSelectedPosition(button)
+
     def onLeftClick(self, button):
+        if self.group_mask:
+            self.setSelectionMask()
+            return
+
         is_first_tile = (not _tiles)
         position = self.getButtonPosition(button)
         tileobj = self.runTileBuilderDialog(position)
