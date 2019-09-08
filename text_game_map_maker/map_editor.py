@@ -553,7 +553,7 @@ class MapEditor(QtWidgets.QDialog):
         self.deserializeFromSaveFile(attrs)
 
     def deleteButtonClicked(self):
-        tiles = self.selectedPositions()
+        tiles = self.getSelectedPositions()
 
         if not tiles:
             self.errorDialog("Unable to delete tile", "No selected tiles")
@@ -650,7 +650,11 @@ class MapEditor(QtWidgets.QDialog):
 
     def moveButtonClicked(self):
         self.copying = False
+        # Enable tracking of tile button enter events
         self.tracking_tile_button_enter = True
+
+        # Get positions of all the tiles we need to move
+        self.group_mask = self.getSelectedPositions()
 
     def copyButtonClicked(self):
         self.copying = True
@@ -1044,7 +1048,41 @@ class MapEditor(QtWidgets.QDialog):
         self.onLeftClick(self.buttonAtPosition(*self.selectedPosition))
 
     def moveSelectionMask(self):
-        pass
+        # Get positions of all the original tiles from the selection mask
+        orig_positions = self.getSelectedPositions()
+
+        # Populate & connect all the new tiles
+        for i in range(len(orig_positions)):
+            pos = orig_positions[i]
+            src_tile = self.tileAtPosition(*pos)
+            directions = ['north', 'south', 'east', 'west']
+
+            # Handle new tile connections
+            for attr in directions:
+                delta_y, delta_x = _move_map[attr]
+                adj_pos = (pos[0] + delta_y, pos[1] + delta_x)
+                if adj_pos not in orig_positions:
+                    adj_tile = self.tileAtPosition(*adj_pos)
+                    if adj_tile:
+                        setattr(src_tile, attr, None)
+                        setattr(adj_tile, tile.reverse_direction(attr), None)
+                        adj_button = self.buttonAtPosition(*adj_pos)
+                        is_start = adj_pos == self.selectedPosition
+                        adj_button.setStyle(start=is_start)
+
+                    continue
+
+            # move tile to new position
+            _tiles[self.group_mask[i]] = src_tile
+            button = self.buttonAtPosition(*self.group_mask[i])
+            button.setText(src_tile.tile_id)
+            button.setStyle()
+
+            # Delete tile at old position
+            del _tiles[pos]
+            old_button = self.buttonAtPosition(*pos)
+            old_button.setText("")
+            old_button.setStyle()
 
     def copySelectionMask(self):
         # Get positions of all the original tiles from the selection mask
