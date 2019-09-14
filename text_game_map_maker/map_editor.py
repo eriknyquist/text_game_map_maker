@@ -969,6 +969,7 @@ class MapEditor(QtWidgets.QDialog):
 
         tileobj.description = settings.description
         tileobj.name = settings.name
+        tileobj.original_name = settings.name
         tileobj.first_visit_message = settings.first_visit_message
         tileobj.first_visit_message_in_dark = settings.first_visit_message_in_dark
         tileobj.dark = settings.dark
