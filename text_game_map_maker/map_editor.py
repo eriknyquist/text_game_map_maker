@@ -1,6 +1,7 @@
 import os
 import json
 import zlib
+import copy
 import traceback
 
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -1096,16 +1097,33 @@ class MapEditor(QtWidgets.QDialog):
             old_button.setStyle()
             old_button.redrawDoors()
 
+    def getCopiedTileId(self, tile_id):
+        base = tile_id + "_copy"
+        if tile.get_tile_by_id(base) is None:
+            return base
+
+        num = 1
+        while True:
+            numbered_copy = base + str(num)
+            if tile.get_tile_by_id(numbered_copy) is None:
+                return numbered_copy
+
+            num += 1
+
     def copySelectionMask(self):
         # Get positions of all the original tiles from the selection mask
         orig_positions = self.getSelectedPositions()
+
+        # Map of source tile IDs to copied tile IDs
+        tile_id_map = {}
 
         # Create all the new tiles
         new_tiles = []
         for i in range(len(orig_positions)):
             src_tile = self.tileAtPosition(*orig_positions[i])
             tileobj = tile.Tile()
-            tileobj.set_tile_id(src_tile.tile_id + "_copy")
+            tileobj.set_tile_id(self.getCopiedTileId(src_tile.tile_id))
+            tile_id_map[src_tile.tile_id] = tileobj.tile_id
             new_tiles.append(tileobj)
 
         # Populate & connect all the new tiles
@@ -1118,14 +1136,28 @@ class MapEditor(QtWidgets.QDialog):
             for attr in directions:
                 src_adj = getattr(src_tile, attr)
                 if src_adj is None:
-                    setattr(dest_tile, attr, None)
-                    continue
+                    dest_adj = None
 
-                copy_name = src_adj.tile_id + "_copy"
-                dest_adj = tile.get_tile_by_id(copy_name)
-                if dest_adj is None:
-                    setattr(dest_tile, attr, None)
-                    continue
+                elif src_adj.is_door():
+                    door_copy = copy.deepcopy(src_adj)
+                    door_copy.tile_id = None
+                    door_copy.set_tile_id(self.getCopiedTileId(src_adj.tile_id))
+                    door_copy.src_tile = dest_tile
+                    door_copy.replacement_tile = None
+                    dest_adj = door_copy
+
+                elif src_adj.tile_id in tile_id_map:
+                    copy_name = tile_id_map[src_adj.tile_id]
+                    dest_adj = tile.get_tile_by_id(copy_name)
+                    if dest_adj is None:
+                        setattr(dest_tile, attr, None)
+                        continue
+
+                    reverse_ptr = getattr(dest_adj, tile.reverse_direction(attr))
+                    if reverse_ptr and reverse_ptr.is_door():
+                        reverse_ptr.replacement_tile = dest_tile
+                else:
+                    dest_adj = None
 
                 setattr(dest_tile, attr, dest_adj)
 
