@@ -579,6 +579,7 @@ class MapEditor(QtWidgets.QDialog):
         button = self.buttonAtPosition(*pos)
         tileobj = self.tileAtPosition(*pos)
 
+        tile.unregister_tile_id(tileobj.tile_id)
         self.disconnectSurroundingTiles(tileobj, *pos)
         del _tiles[pos]
         button.setText("")
