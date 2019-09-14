@@ -606,7 +606,7 @@ class MapEditor(QtWidgets.QDialog):
         return positions
 
     def onTileButtonEnter(self, button):
-        old_pos = self.group_mask[0]
+        old_pos = self.group_mask[-1]
         new_pos = self.getButtonPosition(button)
 
         delta_y = new_pos[0] - old_pos[0]
