@@ -650,6 +650,10 @@ class MapEditor(QtWidgets.QDialog):
         self.clearButton.setEnabled(False)
 
     def moveButtonClicked(self):
+        # Are we already in the middle of a copy/move operation?
+        if self.tracking_tile_button_enter:
+            return
+
         self.copying = False
         # Enable tracking of tile button enter events
         self.tracking_tile_button_enter = True
@@ -658,6 +662,10 @@ class MapEditor(QtWidgets.QDialog):
         self.group_mask = self.getSelectedPositions()
 
     def copyButtonClicked(self):
+        # Are we already in the middle of a copy/move operation?
+        if self.tracking_tile_button_enter:
+            return
+
         self.copying = True
         # Enable tracking of tile button enter events
         self.tracking_tile_button_enter = True
