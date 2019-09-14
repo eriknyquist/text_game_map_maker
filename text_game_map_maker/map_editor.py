@@ -1087,12 +1087,14 @@ class MapEditor(QtWidgets.QDialog):
             button = self.buttonAtPosition(*self.group_mask[i])
             button.setText(src_tile.tile_id)
             button.setStyle()
+            button.redrawDoors()
 
             # Delete tile at old position
             del _tiles[pos]
             old_button = self.buttonAtPosition(*pos)
             old_button.setText("")
             old_button.setStyle()
+            old_button.redrawDoors()
 
     def copySelectionMask(self):
         # Get positions of all the original tiles from the selection mask
