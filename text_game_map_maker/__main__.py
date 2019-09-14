@@ -10,6 +10,14 @@ from text_game_map_maker import __email__ as author_email
 from text_game_map_maker import __name__ as package_name
 from text_game_map_maker import __version__ as package_version
 
+try:
+    from text_game_map_maker import git_rev
+except ImportError:
+    # No git_rev.py created yet, unreleased version
+    git_commit = "dev"
+else:
+    git_commit = git_rev.commit[:7]
+
 
 def textDisplayWindow(title, message):
     msg = QtWidgets.QMessageBox()
@@ -187,7 +195,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "%s is a tool for creating maps that can be loaded and" % package_name,
             "used with the text_game_maker package.\n\n",
             "author: %s (%s)\n\n" % (package_author, author_email),
-            "version: %s\n\n" % (package_version),
+            "version: %s (%s)\n\n" % (package_version, git_commit),
             "https://github.com/eriknyquist/text_game_maker\n\n",
             "https://github.com/eriknyquist/text_game_map_maker"
         ]

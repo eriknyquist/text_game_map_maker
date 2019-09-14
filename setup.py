@@ -2,6 +2,7 @@ import unittest
 import os
 from setuptools import setup, find_packages
 from distutils.core import Command
+import gen_git_rev
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 README = os.path.join(HERE, "README.rst")
@@ -19,6 +20,8 @@ with open(README, 'r') as f:
 
 with open(REQFILE, 'r') as fh:
     dependencies = fh.readlines()
+
+gen_git_rev.create_file()
 
 setup(
     name='text_game_map_maker',
