@@ -1143,6 +1143,7 @@ class MapEditor(QtWidgets.QDialog):
             button = self.buttonAtPosition(*self.group_mask[i])
             button.setText(dest_tile.tile_id)
             button.setStyle()
+            button.redrawDoors()
 
     def setSelectionMask(self):
         if self.copying:
