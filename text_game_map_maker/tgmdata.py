@@ -2,7 +2,7 @@ from text_game_maker.player import player
 from text_game_maker.tile import tile
 from text_game_maker.game_objects import __object_model_version__ as obj_version
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 VERSION_KEY = "tgmdata_version"
 
 class VersionMigration(object):
@@ -15,11 +15,20 @@ class VersionMigration(object):
         return self._do_migration(attrs)
 
 def migrate_noversion_100(attrs):
+    # Fix save files created before the 'islands' attribute was added
     attrs['islands'] = []
     return attrs
 
+def migrate_100_101(attrs):
+    # Fix save files created before we started setting 'original_name' on new tiles
+    for tiledata in attrs[player.TILES_KEY]:
+        tiledata["original_name"] = tiledata["name"]
+
+    return attrs
+
 migrations = [
-    VersionMigration(None, "1.0.0", migrate_noversion_100)
+    VersionMigration(None, "1.0.0", migrate_noversion_100),
+    VersionMigration("1.0.0", "1.0.1", migrate_100_101)
 ]
 
 def migrate_tgmdata_version(attrs):
