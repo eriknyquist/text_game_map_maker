@@ -201,6 +201,9 @@ class DoorEditor(QtWidgets.QDialog):
         setattr(self.tile, direction, doorobj.replacement_tile)
         self.table.removeRow(selectedRow)
 
+        # Enabling saving if it was disabled
+        self.parent.setSaveEnabled(True)
+
     def addRow(self, door, direction):
         nextFreeRow = self.table.rowCount()
         self.table.insertRow(nextFreeRow)

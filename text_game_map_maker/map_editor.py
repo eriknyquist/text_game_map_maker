@@ -742,6 +742,7 @@ class MapEditor(QtWidgets.QDialog):
 
         button.update()
         self.redrawSurroundingTiles(*self.selectedPosition)
+        self.setSaveEnabled(True)
 
     def saveFileDialog(self):
         dialog = QtWidgets.QFileDialog(self)
