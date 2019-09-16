@@ -1061,6 +1061,8 @@ class MapEditor(QtWidgets.QDialog):
         # Get positions of all the original tiles from the selection mask
         orig_positions = self.getSelectedPositions()
 
+        src_tiles = {}
+
         # Populate & connect all the new tiles
         for i in range(len(orig_positions)):
             pos = orig_positions[i]
@@ -1071,6 +1073,9 @@ class MapEditor(QtWidgets.QDialog):
             for attr in directions:
                 delta_y, delta_x = _move_map[attr]
                 adj_pos = (pos[0] + delta_y, pos[1] + delta_x)
+
+                # If this tile is connected to a tile we're not moving, we'll
+                # need to sever that connection
                 if adj_pos not in orig_positions:
                     adj_tile = self.tileAtPosition(*adj_pos)
                     if adj_tile:
@@ -1082,19 +1087,31 @@ class MapEditor(QtWidgets.QDialog):
 
                     continue
 
-            # move tile to new position
-            _tiles[self.group_mask[i]] = src_tile
-            button = self.buttonAtPosition(*self.group_mask[i])
-            button.setText(src_tile.map_identifier)
-            button.setStyle()
-            button.redrawDoors()
+            # Save src tile for the next iteration so we can delete it now
+            src_tiles[pos] = _tiles[pos]
 
-            # Delete tile at old position
+            # Delete tile from old position
             del _tiles[pos]
+
             old_button = self.buttonAtPosition(*pos)
             old_button.setText("")
             old_button.setStyle()
             old_button.redrawDoors()
+
+        # Loop over buttons again to draw new tiles; we need two seperate
+        # loops for drawing the old tile positions and drawing the new
+        # tile positions after moving, in case the two groups overlap
+        for i in range(len(orig_positions)):
+            pos = orig_positions[i]
+            src_tile = src_tiles[pos]
+
+            # Add tile to new position
+            _tiles[self.group_mask[i]] = src_tile
+
+            button = self.buttonAtPosition(*self.group_mask[i])
+            button.setText(src_tile.map_identifier)
+            button.setStyle()
+            button.redrawDoors()
 
     def getCopiedTileId(self, tile_id):
         base = tile_id + "_copy"
