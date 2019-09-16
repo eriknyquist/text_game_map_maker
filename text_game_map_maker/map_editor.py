@@ -404,7 +404,7 @@ class MapEditor(QtWidgets.QDialog):
 
             _tiles[pos] = tileobj
             button = self.buttonAtPosition(*pos)
-            button.setText(tileobj.tile_id)
+            button.setText(tileobj.map_identifier)
 
             is_start = tileobj is start_tile
             button.setStyle(selected=False, start=is_start)
@@ -1087,7 +1087,7 @@ class MapEditor(QtWidgets.QDialog):
             # move tile to new position
             _tiles[self.group_mask[i]] = src_tile
             button = self.buttonAtPosition(*self.group_mask[i])
-            button.setText(src_tile.tile_id)
+            button.setText(src_tile.map_identifier)
             button.setStyle()
             button.redrawDoors()
 
@@ -1174,7 +1174,7 @@ class MapEditor(QtWidgets.QDialog):
 
             _tiles[self.group_mask[i]] = dest_tile
             button = self.buttonAtPosition(*self.group_mask[i])
-            button.setText(dest_tile.tile_id)
+            button.setText(dest_tile.map_identifier)
             button.setStyle()
             button.redrawDoors()
 
@@ -1221,7 +1221,7 @@ class MapEditor(QtWidgets.QDialog):
             button.setStyle(selected=True, start=False)
             self.connectSurroundingTiles(tileobj, *position)
 
-        button.setText(str(tileobj.tile_id))
+        button.setText(tileobj.map_identifier)
         self.setSelectedPosition(button)
 
         if is_first_tile:
