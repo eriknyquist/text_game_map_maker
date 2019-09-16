@@ -620,23 +620,21 @@ class MapEditor(QtWidgets.QDialog):
 
         # Re-draw old selection mask to put tiles back to normal
         for pos in self.group_mask:
-            if pos not in new_mask:
-                b = self.buttonAtPosition(*pos)
-                if not b:
-                    continue
+            b = self.buttonAtPosition(*pos)
+            if not b:
+                continue
 
-                is_selected = (pos == self.selectedPosition) or (pos in self.selectedPositions)
-                is_start = pos == self.startTilePosition
-                b.setStyle(selected=is_selected, start=is_start)
+            is_selected = (pos == self.selectedPosition) or (pos in self.selectedPositions)
+            is_start = pos == self.startTilePosition
+            b.setStyle(selected=is_selected, start=is_start)
 
         # Draw selection mask at new position
         for pos in new_mask:
-            if pos not in self.group_mask:
-                b = self.buttonAtPosition(*pos)
-                if not b:
-                    continue
+            b = self.buttonAtPosition(*pos)
+            if not b:
+                continue
 
-                b.setStyle(selection_mask=True)
+            b.setStyle(selection_mask=True)
 
         self.group_mask = new_mask
 
