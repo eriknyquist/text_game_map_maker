@@ -607,8 +607,10 @@ class MapEditor(QtWidgets.QDialog):
         return positions
 
     def onTileButtonEnter(self, button):
+        self.drawSelectionMask(self.getButtonPosition(button))
+
+    def drawSelectionMask(self, new_pos):
         old_pos = self.group_mask[-1]
-        new_pos = self.getButtonPosition(button)
 
         delta_y = new_pos[0] - old_pos[0]
         delta_x = new_pos[1] - old_pos[1]
@@ -660,6 +662,11 @@ class MapEditor(QtWidgets.QDialog):
         # Get positions of all the tiles we need to move
         self.group_mask = self.getSelectedPositions()
 
+        # If cursor is currently over a tile, initialize selection mask there
+        if tile_button.TileButton.hovering:
+            pos = self.getButtonPosition(tile_button.TileButton.hovering)
+            self.drawSelectionMask(pos)
+
     def copyButtonClicked(self):
         # Are we already in the middle of a copy/move operation?
         if self.tracking_tile_button_enter:
@@ -671,6 +678,11 @@ class MapEditor(QtWidgets.QDialog):
 
         # Get positions of all the tiles we need to copy
         self.group_mask = self.getSelectedPositions()
+
+        # If cursor is currently over a tile, initialize selection mask there
+        if tile_button.TileButton.hovering:
+            pos = self.getButtonPosition(tile_button.TileButton.hovering)
+            self.drawSelectionMask(pos)
 
     def doorButtonClicked(self):
         tileobj = _tiles[self.selectedPosition]
