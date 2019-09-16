@@ -31,6 +31,10 @@ class TileButton(QtWidgets.QPushButton):
     walls_map = {}
     doors_map = {}
 
+    # When the cursor is hovering over a tile button, this will contain the
+    # button object, otherwise None.
+    hovering = None
+
     def __init__(self, parent=None):
         super(TileButton, self).__init__(parent)
         self.doors = []
@@ -72,7 +76,12 @@ class TileButton(QtWidgets.QPushButton):
             "west": (0, adjusted_qwidth, 0, width - adjusted_qwidth)
         }
 
+    def leaveEvent(self, event):
+        self.__class__.hovering = None
+
     def enterEvent(self, event):
+        self.__class__.hovering = self
+
         if self.main.tracking_tile_button_enter:
             self.main.onTileButtonEnter(self)
 
