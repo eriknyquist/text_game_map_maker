@@ -282,8 +282,16 @@ class MapEditor(QtWidgets.QDialog):
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
-            if self.warningBeforeQuit():
-                QtWidgets.qApp.quit()
+            # If we're in the middle of a move/copy operation, escape key should cancel it
+            if self.tracking_tile_button_enter:
+                self.eraseSelectionMask()
+                self.tracking_tile_button_enter = False
+                self.group_mask = []
+
+            # Otherwise, escape key should close the main window (after a warning)
+            else:
+                if self.warningBeforeQuit():
+                    QtWidgets.qApp.quit()
 
     def setSaveEnabled(self, value):
         if value == self.save_enabled:
@@ -609,6 +617,16 @@ class MapEditor(QtWidgets.QDialog):
     def onTileButtonEnter(self, button):
         self.drawSelectionMask(self.getButtonPosition(button))
 
+    def eraseSelectionMask(self):
+        for pos in self.group_mask:
+            b = self.buttonAtPosition(*pos)
+            if not b:
+                continue
+
+            is_selected = (pos == self.selectedPosition) or (pos in self.selectedPositions)
+            is_start = pos == self.startTilePosition
+            b.setStyle(selected=is_selected, start=is_start)
+
     def drawSelectionMask(self, new_pos):
         old_pos = self.group_mask[-1]
 
@@ -621,14 +639,7 @@ class MapEditor(QtWidgets.QDialog):
             new_mask.append((pos[0] + delta_y, pos[1] + delta_x))
 
         # Re-draw old selection mask to put tiles back to normal
-        for pos in self.group_mask:
-            b = self.buttonAtPosition(*pos)
-            if not b:
-                continue
-
-            is_selected = (pos == self.selectedPosition) or (pos in self.selectedPositions)
-            is_start = pos == self.startTilePosition
-            b.setStyle(selected=is_selected, start=is_start)
+        self.eraseSelectionMask()
 
         # Draw selection mask at new position
         for pos in new_mask:
@@ -1212,7 +1223,7 @@ class MapEditor(QtWidgets.QDialog):
             self.moveSelectionMask()
 
         self.tracking_tile_button_enter = False
-        self.group_mask = False
+        self.group_mask = []
 
     def onMiddleClick(self, button):
         pass
