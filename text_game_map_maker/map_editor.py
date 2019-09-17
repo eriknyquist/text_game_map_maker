@@ -102,6 +102,7 @@ class MapEditor(QtWidgets.QDialog):
         self.loaded_file = None
         self.save_enabled = True
         self.copying = False
+        self.last_selection_added = None
         self.tracking_tile_button_enter = False
         self.group_mask = []
 
@@ -159,7 +160,11 @@ class MapEditor(QtWidgets.QDialog):
         QtWidgets.QShortcut(QtGui.QKeySequence("right"), self, self.rightKeyPress)
         QtWidgets.QShortcut(QtGui.QKeySequence("left"), self, self.leftKeyPress)
         QtWidgets.QShortcut(QtGui.QKeySequence("up"), self, self.upKeyPress)
-        QtWidgets.QShortcut(QtGui.QKeySequence("down"), self, self.downKeyPress)\
+        QtWidgets.QShortcut(QtGui.QKeySequence("down"), self, self.downKeyPress)
+        QtWidgets.QShortcut(QtGui.QKeySequence("Shift+right"), self, self.shiftRightKeyPress)
+        QtWidgets.QShortcut(QtGui.QKeySequence("Shift+left"), self, self.shiftLeftKeyPress)
+        QtWidgets.QShortcut(QtGui.QKeySequence("Shift+up"), self, self.shiftUpKeyPress)
+        QtWidgets.QShortcut(QtGui.QKeySequence("Shift+down"), self, self.shiftDownKeyPress)
 
     def moveSelection(self, y_move, x_move):
         if self.selectedPosition is None:
@@ -175,17 +180,72 @@ class MapEditor(QtWidgets.QDialog):
         button = self.buttonAtPosition(*newpos)
         self.setSelectedPosition(button)
 
+    def clearSelectedPositions(self):
+        if self.selectedPositions:
+            for pos in self.selectedPositions:
+                b = self.buttonAtPosition(*pos)
+                is_start = pos == self.startTilePosition
+                b.setStyle(selected=False, start=is_start)
+
+            self.selectedPositions = []
+
+    def shiftArrowKeyPress(self, direction):
+        if self.tracking_tile_button_enter:
+            return
+
+        if not self.last_selection_added:
+            return
+
+        y, x = self.last_selection_added
+        yd, xd = _move_map[direction]
+        newy, newx = y + yd, x + xd
+
+        if (0 <= newy < NUM_BUTTON_ROWS) and (0 <= newx < NUM_BUTTON_COLUMNS):
+            button = self.buttonAtPosition(newy, newx)
+            self.addSelectedPosition(button)
+            self.scrollArea.ensureWidgetVisible(button)
+
+    def arrowKeyPress(self, direction):
+        if self.selectedPositions:
+            self.selectedPosition = self.selectedPositions[-1]
+
+        if self.tracking_tile_button_enter:
+            yd, xd = _move_map[direction]
+            y, x = self.group_mask[-1]
+            new_pos = (y + yd, x + xd)
+
+            if (0 <= new_pos[0] < NUM_BUTTON_ROWS) and (0 <= new_pos[1] < NUM_BUTTON_COLUMNS):
+                self.drawSelectionMask(new_pos)
+                button = self.buttonAtPosition(*new_pos)
+                self.scrollArea.ensureWidgetVisible(button)
+
+        else:
+            self.clearSelectedPositions()
+            self.moveSelection(*_move_map[direction])
+
+    def shiftLeftKeyPress(self):
+        self.shiftArrowKeyPress('west')
+
+    def shiftRightKeyPress(self):
+        self.shiftArrowKeyPress('east')
+
+    def shiftUpKeyPress(self):
+        self.shiftArrowKeyPress('north')
+
+    def shiftDownKeyPress(self):
+        self.shiftArrowKeyPress('south')
+
     def leftKeyPress(self):
-        self.moveSelection(*_move_map['west'])
+        self.arrowKeyPress('west')
 
     def rightKeyPress(self):
-        self.moveSelection(*_move_map['east'])
+        self.arrowKeyPress('east')
 
     def upKeyPress(self):
-        self.moveSelection(*_move_map['north'])
+        self.arrowKeyPress('north')
 
     def downKeyPress(self):
-        self.moveSelection(*_move_map['south'])
+        self.arrowKeyPress('south')
 
     def buildToolbar(self):
         self.deleteButton = QtWidgets.QPushButton()
@@ -609,7 +669,7 @@ class MapEditor(QtWidgets.QDialog):
 
     def getSelectedPositions(self):
         positions = [p for p in self.selectedPositions if p in _tiles]
-        if self.selectedPosition in _tiles:
+        if self.selectedPosition in _tiles and self.selectedPosition not in positions:
             positions.append(self.selectedPosition)
 
         return positions
@@ -885,7 +945,7 @@ class MapEditor(QtWidgets.QDialog):
 
         return north, south, east, west
 
-    def enableSelectionDependantItems(self):
+    def enableSelectionDependentItems(self):
         exactly_one = self.selectedPosition in _tiles
         one_or_more = exactly_one
 
@@ -910,12 +970,7 @@ class MapEditor(QtWidgets.QDialog):
 
     def setSelectedPosition(self, button):
         # De-select group if any is selected
-        for pos in self.selectedPositions:
-            b = self.buttonAtPosition(*pos)
-            is_start = pos == self.startTilePosition
-            b.setStyle(selected=False, start=is_start)
-
-        self.selectedPositions = []
+        self.clearSelectedPositions()
 
         if self.selectedPosition is not None:
             oldstart = self.selectedPosition == self.startTilePosition
@@ -940,8 +995,9 @@ class MapEditor(QtWidgets.QDialog):
             self.startTileCheckBox.setEnabled(False)
 
         button.setFocus(True)
+        self.last_selection_added = self.selectedPosition
         self.scrollArea.ensureWidgetVisible(button)
-        self.enableSelectionDependantItems()
+        self.enableSelectionDependentItems()
 
     def addSelectedPosition(self, button):
         if self.selectedPosition is not None:
@@ -949,13 +1005,14 @@ class MapEditor(QtWidgets.QDialog):
             self.selectedPosition = None
 
         pos = self.getButtonPosition(button)
+        self.last_selection_added = pos
         if pos in self.selectedPositions:
             return
 
         self.selectedPositions.append(pos)
         is_start = pos == self.startTilePosition
         button.setStyle(selected=True, start=is_start)
-        self.enableSelectionDependantItems()
+        self.enableSelectionDependentItems()
 
     def runTileBuilderDialog(self, position):
         settings = forms.TileSettings()
