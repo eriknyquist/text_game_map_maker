@@ -192,8 +192,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def showAboutWindow(self):
         lines = [
-            "%s is a tool for creating maps that can be loaded and" % package_name,
-            "used with the text_game_maker package.\n\n",
+            "%s is a tool for creating maps that can be loaded and " % package_name,
+            "used with the text_game_maker python library.\n\n",
             "author: %s (%s)\n\n" % (package_author, author_email),
             "version: %s (%s)\n\n" % (package_version, git_commit),
             "https://github.com/eriknyquist/text_game_maker\n\n",
