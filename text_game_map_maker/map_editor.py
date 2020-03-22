@@ -589,6 +589,7 @@ class MapEditor(QtWidgets.QDialog):
         new_start.setStyle(selected=True, start=True)
         self.startTilePosition = self.selectedPosition
         self.startTileCheckBox.setEnabled(False)
+        self.main.startTileAction.setEnabled(False)
         self.setSaveEnabled(True)
 
     def tileIDExists(self, tile_id):
@@ -966,7 +967,7 @@ class MapEditor(QtWidgets.QDialog):
 
         # These items require exactly one tile to be selected
         for obj in [self.doorButton, self.wallButton, self.main.editDoorsAction,
-                    self.main.editWallsAction]:
+                    self.main.editWallsAction, self.main.editTileAction]:
             if obj.isEnabled() != exactly_one:
                 obj.setEnabled(exactly_one)
 
@@ -989,12 +990,15 @@ class MapEditor(QtWidgets.QDialog):
         if self.selectedPosition == self.startTilePosition:
             _silent_checkbox_set(self.startTileCheckBox, True, self.setStartTile)
             self.startTileCheckBox.setEnabled(False)
+            self.main.startTileAction.setEnabled(False)
         elif filled:
             self.startTileCheckBox.setEnabled(True)
             _silent_checkbox_set(self.startTileCheckBox, False, self.setStartTile)
+            self.main.startTileAction.setEnabled(True)
         else:
             _silent_checkbox_set(self.startTileCheckBox, False, self.setStartTile)
             self.startTileCheckBox.setEnabled(False)
+            self.main.startTileAction.setEnabled(False)
 
         button.setFocus(True)
         self.last_selection_added = self.selectedPosition
@@ -1019,6 +1023,7 @@ class MapEditor(QtWidgets.QDialog):
         # Start tile checkbox should always be disabled with multiple tiles selected
         _silent_checkbox_set(self.startTileCheckBox, False, self.setStartTile)
         self.startTileCheckBox.setEnabled(False)
+        self.main.startTileAction.setEnabled(False)
 
     def runTileBuilderDialog(self, position):
         settings = forms.TileSettings()
