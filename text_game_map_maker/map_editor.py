@@ -435,6 +435,8 @@ class MapEditor(QtWidgets.QDialog):
         self.selectedPosition = None
         self.selectedPositions = []
 
+        self.enableSelectionDependentItems()
+
     def yesNoDialog(self, header="", msg="Are you sure?"):
         reply = QtWidgets.QMessageBox.question(self, header, msg,
                                                (QtWidgets.QMessageBox.Yes |
