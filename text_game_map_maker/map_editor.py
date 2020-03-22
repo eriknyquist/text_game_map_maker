@@ -1014,6 +1014,10 @@ class MapEditor(QtWidgets.QDialog):
         button.setStyle(selected=True, start=is_start)
         self.enableSelectionDependentItems()
 
+        # Start tile checkbox should always be disabled with multiple tiles selected
+        _silent_checkbox_set(self.startTileCheckBox, False, self.setStartTile)
+        self.startTileCheckBox.setEnabled(False)
+
     def runTileBuilderDialog(self, position):
         settings = forms.TileSettings()
 
