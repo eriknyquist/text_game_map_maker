@@ -1190,7 +1190,15 @@ class MapEditor(QtWidgets.QDialog):
 
             button = self.buttonAtPosition(*self.group_mask[i])
             button.setText(src_tile.map_identifier)
-            button.setStyle()
+
+            # Handle the case where start tile was moved - need to change
+            # start tile position
+            if self.startTilePosition == pos:
+                self.startTilePosition = self.group_mask[i]
+                button.setStyle(selected=True, start=True)
+            else:
+                button.setStyle()
+
             button.redrawDoors()
 
     def getCopiedTileId(self, tile_id):
