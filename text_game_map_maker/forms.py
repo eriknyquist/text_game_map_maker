@@ -76,5 +76,17 @@ class TileSettings(AutoFormSettings):
                                      "smells the ground on the current tile"}),
         ('ground_taste_description', {'type': 'str', 'label': 'ground taste description',
                                      'tooltip': "String displayed when player "
-                                     "tastes the ground on the current tile"})
+                                     "tastes the ground on the current tile"}),
+        ('name_from_north', {'type': 'str', 'label': 'name from south',
+                             'tooltip': 'String used to describe this tile when'
+                             ' player is on the adjacent tile to the south'}),
+        ('name_from_south', {'type': 'str', 'label': 'name from south',
+                             'tooltip': 'String used to describe this tile when'
+                             ' player is on the adjacent tile to the south'}),
+        ('name_from_east', {'type': 'str', 'label': 'name from east',
+                            'tooltip': 'String used to describe this tile when'
+                            ' player is on the adjacent tile to the east'}),
+        ('name_from_west', {'type': 'str', 'label': 'name from west',
+                            'tooltip': 'String used to describe this tile when'
+                            ' player is on the adjacent tile to the west'})
     ])

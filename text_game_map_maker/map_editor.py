@@ -1039,6 +1039,10 @@ class MapEditor(QtWidgets.QDialog):
             settings.smell_description = tileobj.smell_description
             settings.ground_smell_description = tileobj.ground_smell_description
             settings.ground_taste_description = tileobj.ground_taste_description
+            settings.name_from_north = tileobj.name_from_dir["north"]
+            settings.name_from_south = tileobj.name_from_dir["south"]
+            settings.name_from_east = tileobj.name_from_dir["east"]
+            settings.name_from_west = tileobj.name_from_dir["west"]
         else:
             tileobj = tile.Tile()
             settings.tile_id = "tile%d" % tile.Tile.tile_id
@@ -1047,7 +1051,7 @@ class MapEditor(QtWidgets.QDialog):
         while not complete:
             dialog = QtAutoForm(settings, title="Tile attributes",
                                 formTitle="Set attributes of currently selected tile",
-                                spec=settings.spec)
+                                scrollable=True, spec=settings.spec)
 
             dialog.setWindowModality(QtCore.Qt.ApplicationModal)
             dialog.setWindowIcon(QtGui.QIcon(self.main.iconPath))
@@ -1076,7 +1080,10 @@ class MapEditor(QtWidgets.QDialog):
         tileobj.smell_description = settings.smell_description
         tileobj.ground_smell_description = settings.ground_smell_description
         tileobj.ground_taste_description = settings.ground_taste_description
-
+        tileobj.name_from_dir["north"] = settings.name_from_north
+        tileobj.name_from_dir["south"] = settings.name_from_south
+        tileobj.name_from_dir["east"] = settings.name_from_east
+        tileobj.name_from_dir["west"] = settings.name_from_west
         return tileobj
 
     def redrawSurroundingTiles(self, y, x):
