@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QComboBox, QPlainTextEdit,
     QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-    QSpinBox, QDoubleSpinBox, QTextEdit, QVBoxLayout, QCheckBox, QSizePolicy)
+    QSpinBox, QDoubleSpinBox, QTextEdit, QVBoxLayout, QCheckBox, QSizePolicy,
+    QScrollArea, QWidget)
 
 from PyQt5 import QtCore
 
@@ -139,7 +140,7 @@ class QtAutoForm(QDialog):
     NumGridRows = 3
     NumButtons = 4
 
-    def __init__(self, instance, title=None, spec=None, formTitle=None):
+    def __init__(self, instance, title=None, spec=None, formTitle=None, scrollable=False):
         super(QtAutoForm, self).__init__()
 
         if formTitle is None:
@@ -149,20 +150,31 @@ class QtAutoForm(QDialog):
 
         self.spec = spec
         self.widgets = []
-        self.createFormFromInstance(instance)
 
         buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
         self.accepted.connect(self.writeInstanceValues)
 
+        self.formGroupBox = QGroupBox(self.form_title)
+
+        if scrollable:
+            self.scrollArea = QScrollArea()
+            self.scrollArea.setWidgetResizable(True)
+            self.scrollArea.setWidget(self.formGroupBox)
+            mainWidget = self.scrollArea
+        else:
+            mainWidget = self.formGroupBox
+
         mainLayout = QVBoxLayout()
-        mainLayout.addWidget(self.formGroupBox)
+        mainLayout.addWidget(mainWidget)
         mainLayout.addWidget(buttonBox)
 
         self.setLayout(mainLayout)
         self.setWindowTitle("Editor" if title is None else title)
         self.accepted = False
+
+        self.createFormFromInstance(instance)
 
     def writeInstanceValues(self):
         for widget in self.widgets:
@@ -175,7 +187,6 @@ class QtAutoForm(QDialog):
 
     def createFormFromInstance(self, instance):
         classname = instance.__class__.__name__
-        self.formGroupBox = QGroupBox(self.form_title)
         layout = QFormLayout()
 
         self.widgets = []
