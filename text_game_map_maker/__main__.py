@@ -80,6 +80,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editWallsAction.setStatusTip("Add/edit walls on selected tile")
         self.editWallsAction.triggered.connect(self.widget.wallButtonClicked)
 
+        self.editItemsAction = QtWidgets.QAction("Edit items on selected tile", self)
+        self.editItemsAction.setShortcut("Ctrl+I")
+        self.editItemsAction.setStatusTip("Add/edit items on selected tile")
+        self.editItemsAction.triggered.connect(self.widget.itemButtonClicked)
+
         self.deleteTileAction = QtWidgets.QAction("Delete selected tiles", self)
         self.deleteTileAction.setShortcut("Ctrl+R")
         self.deleteTileAction.setStatusTip("Delete selected tiles")
@@ -140,6 +145,7 @@ class MainWindow(QtWidgets.QMainWindow):
         editMenu.addAction(self.editTileAction)
         editMenu.addAction(self.editDoorsAction)
         editMenu.addAction(self.editWallsAction)
+        editMenu.addAction(self.editItemsAction)
         editMenu.addAction(self.startTileAction)
 
         toolMenu = menu.addMenu("Tools")

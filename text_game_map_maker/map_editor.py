@@ -252,6 +252,7 @@ class MapEditor(QtWidgets.QDialog):
         self.clearButton = QtWidgets.QPushButton()
         self.doorButton = QtWidgets.QPushButton()
         self.wallButton = QtWidgets.QPushButton()
+        self.itemButton = QtWidgets.QPushButton()
         self.moveButton = QtWidgets.QPushButton()
         self.copyButton = QtWidgets.QPushButton()
         self.saveButton = QtWidgets.QPushButton()
@@ -262,16 +263,18 @@ class MapEditor(QtWidgets.QDialog):
         self.clearButton.setText("Clear all tiles")
         self.doorButton.setText("Edit doors")
         self.wallButton.setText("Edit walls")
+        self.itemButton.setText("Edit items")
         self.moveButton.setText("Move tiles")
         self.copyButton.setText("Copy Tiles")
         self.saveButton.setText("Save to file")
         self.loadButton.setText("Load from file")
-        self.loadFromSavedGameButton.setText("Load map from saved game")
+        self.loadFromSavedGameButton.setText("Load from saved game")
 
         self.deleteButton.clicked.connect(self.deleteButtonClicked)
         self.clearButton.clicked.connect(self.clearButtonClicked)
         self.doorButton.clicked.connect(self.doorButtonClicked)
         self.wallButton.clicked.connect(self.wallButtonClicked)
+        self.itemButton.clicked.connect(self.itemButtonClicked)
         self.moveButton.clicked.connect(self.moveButtonClicked)
         self.copyButton.clicked.connect(self.copyButtonClicked)
         self.saveButton.clicked.connect(self.saveButtonClicked)
@@ -299,6 +302,7 @@ class MapEditor(QtWidgets.QDialog):
         tileButtonLayout = QtWidgets.QHBoxLayout()
         tileButtonLayout.addWidget(self.doorButton)
         tileButtonLayout.addWidget(self.wallButton)
+        tileButtonLayout.addWidget(self.itemButton)
         tileButtonLayout.addLayout(checkBoxLayout)
         tileButtonGroup = QtWidgets.QGroupBox("Edit")
         tileButtonGroup.setAlignment(QtCore.Qt.AlignCenter)
@@ -828,6 +832,9 @@ class MapEditor(QtWidgets.QDialog):
         self.redrawSurroundingTiles(*self.selectedPosition)
         self.setSaveEnabled(True)
 
+    def itemButtonClicked(self):
+        pass
+
     def saveFileDialog(self):
         dialog = QtWidgets.QFileDialog(self)
         dialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
@@ -966,8 +973,9 @@ class MapEditor(QtWidgets.QDialog):
                 obj.setEnabled(one_or_more)
 
         # These items require exactly one tile to be selected
-        for obj in [self.doorButton, self.wallButton, self.main.editDoorsAction,
-                    self.main.editWallsAction, self.main.editTileAction]:
+        for obj in [self.doorButton, self.wallButton, self.itemButton,
+                    self.main.editDoorsAction, self.main.editWallsAction,
+                    self.main.editTileAction, self.main.editItemsAction]:
             if obj.isEnabled() != exactly_one:
                 obj.setEnabled(exactly_one)
 
