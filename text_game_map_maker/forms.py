@@ -1,5 +1,6 @@
 from collections import OrderedDict
 
+
 class AutoFormSettings(object):
     def __init__(self):
         if not hasattr(self, "spec"):

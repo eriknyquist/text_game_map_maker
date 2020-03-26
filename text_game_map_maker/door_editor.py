@@ -90,6 +90,8 @@ class DoorEditor(QtWidgets.QDialog):
                                                         "select door type",
                                                         "Select a door type",
                                                         doortypes, 0, False)
+        if not accepted:
+            return
 
         doortype = doortypes[item]
         if doortype == tile.LockedDoor:
