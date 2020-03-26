@@ -14,7 +14,11 @@ class ItemEditor(QtWidgets.QDialog):
         self.tile = tileobj
         self.row_items = []
 
-        self.classobjs = [builders.FoodBuilder]
+        self.classobjs = [
+            builders.FoodBuilder,
+            builders.ItemBuilder
+        ]
+
         self.builders = {c.objtype.__name__: c() for c in self.classobjs}
 
         self.table = QtWidgets.QTableWidget()

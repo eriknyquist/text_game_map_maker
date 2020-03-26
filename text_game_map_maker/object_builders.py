@@ -5,7 +5,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from text_game_map_maker.qt_auto_form import QtAutoForm
 
 from text_game_maker.materials import materials
-from text_game_maker.game_objects.items import Food
+from text_game_maker.game_objects.items import Item, Food
 
 
 class ObjectBuilder(object):
@@ -43,6 +43,31 @@ class ObjectBuilder(object):
         pass
 
 
+class ItemBuilder(ObjectBuilder):
+    objtype = Item
+    spec = OrderedDict([
+        ("material", {"type": "choice", "choices": materials.get_materials(),
+                      "tooltip": "Set this object's material type"}),
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                    "the name of this object, usually 'a' or 'an' (e.g. 'a' "
+                    "sandwich, 'an' apple)"}),
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                  "'sandwich' or 'apple'"}),
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                      "'on the floor' or 'hanging from the wall'"}),
+        ("edible", {"type": "bool", "tooltip": "defines whether player can eat "
+                    "this item without taking damage"}),
+        ("combustible", {"type": "bool", "tooltip": "defines whether this item "
+                         "will burn"}),
+        ("energy", {"type": "int", "tooltip": "defines health gained by player "
+                            "from eating this item (if edible)"}),
+        ("damage", {"type": "int", "tooltip": "defines health lost by player "
+                            "if damaged by this item"}),
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                            "from selling this item"})
+    ])
+
+
 class FoodBuilder(ObjectBuilder):
     objtype = Food
     spec = OrderedDict([
@@ -54,5 +79,11 @@ class FoodBuilder(ObjectBuilder):
         ("name", {"type": "str", "tooltip": "name of this object, e.g. "
                   "'sandwich' or 'apple'"}),
         ("location", {"type": "str", "tooltip": "location of object, e.g. "
-                      "'on the floor' or 'hanging from the wall'"})
+                      "'on the floor' or 'hanging from the wall'"}),
+        ("combustible", {"type": "bool", "tooltip": "defines whether this item "
+                         "will burn"}),
+        ("energy", {"type": "int", "tooltip": "defines health gained by player "
+                            "from eating this item (if edible)"}),
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                            "from selling this item"})
     ])
