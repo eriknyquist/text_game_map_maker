@@ -8,8 +8,17 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 
 from text_game_map_maker import forms, scrollarea, tgmdata
 from text_game_map_maker.door_editor import DoorEditor
+from text_game_map_maker.item_editor import ItemEditor
 from text_game_map_maker import tile_button
 from text_game_map_maker.qt_auto_form import QtAutoForm
+from text_game_maker.game_objects import __object_model_version__ as obj_version
+
+from text_game_maker.game_objects.person import Person, Context
+from text_game_maker.game_objects.items import (Item, Food, Weapon, Bag,
+    SmallBag, SmallTin, Coins, Blueprint, Paper, PaperBag, LargeContainer,
+    Furniture, BoxOfMatches, Flashlight, Battery, Lockpick, StrongLockpick,
+    Lighter, Machete
+)
 
 from text_game_maker.tile import tile
 from text_game_maker.player import player
@@ -298,6 +307,7 @@ class MapEditor(QtWidgets.QDialog):
         self.wallButton.setEnabled(False)
         self.clearButton.setEnabled(False)
         self.deleteButton.setEnabled(False)
+        self.itemButton.setEnabled(False)
 
         tileButtonLayout = QtWidgets.QHBoxLayout()
         tileButtonLayout.addWidget(self.doorButton)
@@ -497,7 +507,7 @@ class MapEditor(QtWidgets.QDialog):
         # Remove items, people and events, we're not dealing with them here
         tilelist = attrs[player.TILES_KEY]
         for tiledata in tilelist:
-            del tiledata[tile.ITEMS_KEY]
+            #del tiledata[tile.ITEMS_KEY]
             del tiledata[tile.PEOPLE_KEY]
             del tiledata[tile.ENTER_EVENT_KEY]
             del tiledata[tile.EXIT_EVENT_KEY]
@@ -770,6 +780,12 @@ class MapEditor(QtWidgets.QDialog):
         doors_dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         doors_dialog.exec_()
 
+    def itemButtonClicked(self):
+        tileobj = _tiles[self.selectedPosition]
+        items_dialog = ItemEditor(self, tileobj)
+        items_dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+        items_dialog.exec_()
+
     def wallButtonClicked(self):
         tileobj = _tiles[self.selectedPosition]
         button = self.buttonAtPosition(*self.selectedPosition)
@@ -831,9 +847,6 @@ class MapEditor(QtWidgets.QDialog):
         button.update()
         self.redrawSurroundingTiles(*self.selectedPosition)
         self.setSaveEnabled(True)
-
-    def itemButtonClicked(self):
-        pass
 
     def saveFileDialog(self):
         dialog = QtWidgets.QFileDialog(self)

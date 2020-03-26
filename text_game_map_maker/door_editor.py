@@ -63,6 +63,10 @@ class DoorEditor(QtWidgets.QDialog):
         mainLayout.addWidget(self.table)
         mainLayout.addWidget(buttonBox)
 
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum,
+                                           QtWidgets.QSizePolicy.Minimum)
+        self.setSizePolicy(sizePolicy)
+
         self.setLayout(mainLayout)
         self.setWindowTitle("Door Editor")
 
@@ -70,6 +74,9 @@ class DoorEditor(QtWidgets.QDialog):
         self.table.setRowCount(0)
         for direction in self.directions:
             self.addRow(self.directions[direction], direction)
+
+    def sizeHint(self):
+        return QtCore.QSize(500, 400)
 
     def getSelectedDirection(self, rowNumber):
         door_id = self.table.item(rowNumber, 0).text()
