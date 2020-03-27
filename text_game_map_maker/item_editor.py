@@ -6,12 +6,15 @@ from text_game_maker.tile import tile
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 
-class ItemEditor(QtWidgets.QDialog):
-    def __init__(self, parent, tileobj):
-        super(ItemEditor, self).__init__(parent=parent)
+class ItemBrowser(QtWidgets.QDialog):
+    """
+    Abstract implementation of class to browse items contained within another item
+    """
+    def __init__(self, parent, container):
+        super(ItemBrowser, self).__init__(parent=parent)
 
         self.parent = parent
-        self.tile = tileobj
+        self.container = container
         self.row_items = []
 
         self.classobjs = [
@@ -72,21 +75,8 @@ class ItemEditor(QtWidgets.QDialog):
         self.setLayout(mainLayout)
         self.setWindowTitle("Item Editor")
 
-    def populateTable(self):
-        self.row_items = []
-
-        self.table.setRowCount(0)
-        for loc in self.tile.items:
-            for item in self.tile.items[loc]:
-                self.addRow(item)
-                self.row_items.append(item)
-
     def sizeHint(self):
         return QtCore.QSize(500, 400)
-
-    def getSelectedDirection(self, rowNumber):
-        door_id = self.table.item(rowNumber, 0).text()
-        return door_id, direction
 
     def addButtonClicked(self):
         item, accepted = QtWidgets.QInputDialog.getItem(self,
@@ -104,7 +94,7 @@ class ItemEditor(QtWidgets.QDialog):
 
         self.addRow(instance)
         self.row_items.append(instance)
-        self.tile.add_item(instance)
+        self.addItemToContainer(instance)
 
         # Enabling saving if it was disabled
         self.parent.setSaveEnabled(True)
@@ -150,10 +140,40 @@ class ItemEditor(QtWidgets.QDialog):
         nextFreeRow = self.table.rowCount()
         self.table.insertRow(nextFreeRow)
 
-        item1 = QtWidgets.QTableWidgetItem(item.__class__.__name__)
-        item2 = QtWidgets.QTableWidgetItem(item.name)
-        item3 = QtWidgets.QTableWidgetItem(item.location)
+        clsname, name, loc = self.getRowInfo(item)
+        item1 = QtWidgets.QTableWidgetItem(clsname)
+        item2 = QtWidgets.QTableWidgetItem(name)
+        item3 = QtWidgets.QTableWidgetItem(loc)
 
         self.table.setItem(nextFreeRow, 0, item1)
         self.table.setItem(nextFreeRow, 1, item2)
         self.table.setItem(nextFreeRow, 2, item3)
+
+    def getRowInfo(self, item):
+        raise NotImplementedError()
+
+    def addItemToContainer(self, item):
+        raise NotImplementedError()
+
+    def populateTable(self):
+        raise NotImplementedError()
+
+
+class TileItemBrowser(ItemBrowser):
+    """
+    Concrete item browser implementation to browse items contained in a Tile object
+    """
+    def populateTable(self):
+        self.row_items = []
+
+        self.table.setRowCount(0)
+        for loc in self.container.items:
+            for item in self.container.items[loc]:
+                self.addRow(item)
+                self.row_items.append(item)
+
+    def addItemToContainer(self, item):
+        self.container.add_item(item)
+
+    def getRowInfo(self, item):
+        return item.__class__.__name__, item.name, item.location

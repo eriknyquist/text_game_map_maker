@@ -76,7 +76,7 @@ class InputWidget(object):
             self.widget.setToolTip(tooltip)
             self.label.setToolTip(tooltip)
 
-    def setInstanceValue(self):
+    def getWidgetValue(self):
         value = self.value_getter(self.widget)
 
         try:
@@ -86,10 +86,9 @@ class InputWidget(object):
         else:
             value = cast_value
 
-        setattr(self.instance, self.attr, value)
+        return value
 
     def setWidgetValue(self, value):
-        value = getattr(self.instance, self.attr)
         if self.typename != "choice":
             if value is None:
                 value = self.default_value
@@ -148,6 +147,7 @@ class QtAutoForm(QDialog):
         else:
             self.form_title = formTitle
 
+        self.instance = None
         self.spec = spec
         self.widgets = []
 
@@ -178,7 +178,7 @@ class QtAutoForm(QDialog):
 
     def writeInstanceValues(self):
         for widget in self.widgets:
-            widget.setInstanceValue()
+            self.setAttribute(widget.attr, widget.getWidgetValue())
 
         self.accepted = True
 
@@ -186,6 +186,7 @@ class QtAutoForm(QDialog):
         return self.accepted
 
     def createFormFromInstance(self, instance):
+        self.instance = instance
         classname = instance.__class__.__name__
         layout = QFormLayout()
 
@@ -197,7 +198,7 @@ class QtAutoForm(QDialog):
 
             input_widget = getInputWidgetForAttr(instance, attrname, self.spec)
 
-            attrvalue = instance.__dict__[attrname]
+            attrvalue = self.getAttribute(attrname)
             if attrvalue is None:
                 widgetvalue = input_widget.default_value
             else:
@@ -208,3 +209,9 @@ class QtAutoForm(QDialog):
             self.widgets.append(input_widget)
 
         self.formGroupBox.setLayout(layout)
+
+    def getAttribute(self, attrname):
+        return self.instance.__dict__[attrname]
+
+    def setAttribute(self, attrname, value):
+        self.instance.__dict__[attrname] = value

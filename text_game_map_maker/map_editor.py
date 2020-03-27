@@ -8,7 +8,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 
 from text_game_map_maker import forms, scrollarea, tgmdata
 from text_game_map_maker.door_editor import DoorEditor
-from text_game_map_maker.item_editor import ItemEditor
+from text_game_map_maker.item_editor import TileItemBrowser
 from text_game_map_maker import tile_button
 from text_game_map_maker.qt_auto_form import QtAutoForm
 from text_game_maker.game_objects import __object_model_version__ as obj_version
@@ -782,7 +782,7 @@ class MapEditor(QtWidgets.QDialog):
 
     def itemButtonClicked(self):
         tileobj = _tiles[self.selectedPosition]
-        items_dialog = ItemEditor(self, tileobj)
+        items_dialog = TileItemBrowser(self, tileobj)
         items_dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         items_dialog.exec_()
 
