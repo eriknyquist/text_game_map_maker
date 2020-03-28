@@ -1,9 +1,10 @@
 from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QComboBox, QPlainTextEdit,
     QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
     QSpinBox, QDoubleSpinBox, QTextEdit, QVBoxLayout, QCheckBox, QSizePolicy,
-    QScrollArea, QWidget)
+    QScrollArea, QWidget, QPushButton)
 
 from PyQt5 import QtCore
+
 
 def _spin_box():
     w = QSpinBox()
@@ -139,7 +140,8 @@ class QtAutoForm(QDialog):
     NumGridRows = 3
     NumButtons = 4
 
-    def __init__(self, instance, title=None, spec=None, formTitle=None, scrollable=False):
+    def __init__(self, instance, title=None, spec=None, formTitle=None,
+                 scrollable=False, extra_button=False, extra_button_text=""):
         super(QtAutoForm, self).__init__()
 
         if formTitle is None:
@@ -150,10 +152,17 @@ class QtAutoForm(QDialog):
         self.instance = None
         self.spec = spec
         self.widgets = []
+        self.extra_button = extra_button
 
+        self.extraButton = QPushButton(extra_button_text)
         buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
+
+        if extra_button:
+            self.extraButton.clicked.connect(self.extraButtonClicked)
+            buttonBox.addButton(self.extraButton, QDialogButtonBox.ActionRole)
+
         self.accepted.connect(self.writeInstanceValues)
 
         self.formGroupBox = QGroupBox(self.form_title)
@@ -215,3 +224,6 @@ class QtAutoForm(QDialog):
 
     def setAttribute(self, attrname, value):
         self.instance.__dict__[attrname] = value
+
+    def extraButtonClicked(self):
+        pass
