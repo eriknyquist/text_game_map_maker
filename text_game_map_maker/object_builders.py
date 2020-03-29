@@ -6,7 +6,10 @@ from text_game_map_maker.constants import available_item_sizes
 from text_game_map_maker.qt_auto_form import QtAutoForm
 
 from text_game_maker.materials import materials
-from text_game_maker.game_objects.items import Item, Food, ItemSize
+from text_game_maker.game_objects.items import (
+    Item, Food, ItemSize, Flashlight, Battery, Coins, PaperBag, SmallBag, Bag,
+    LargeBag, SmallTin
+)
 
 
 # ----- QtAutoForm subclasses -----
@@ -14,19 +17,19 @@ from text_game_maker.game_objects.items import Item, Food, ItemSize
 class ItemEditorAutoForm(QtAutoForm):
     def getAttribute(self, attrname):
         if attrname == 'size':
-            val = self.instance.__dict__[attrname]
+            val = getattr(self.instance, attrname)
             for s in available_item_sizes:
                 if getattr(ItemSize, s) == val:
                     return s
 
-        return self.instance.__dict__[attrname]
+        return getattr(self.instance, attrname)
 
     def setAttribute(self, attrname, value):
         if attrname == 'size':
-            self.instance.__dict__[attrname] = getattr(ItemSize, value)
+            settattr(self.instance, attrname, getattr(ItemSize, value))
             return
 
-        self.instance.__dict__[attrname] = value
+        setattr(self.instance, attrname, value)
 
 
 class ContainerItemEditorAutoForm(ItemEditorAutoForm):
@@ -112,6 +115,169 @@ class ItemBuilder(ObjectBuilder):
                              "items cannot contain items of a larger size class."})
     ])
 
+class FlashlightBuilder(ObjectBuilder):
+    objtype = Flashlight
+    spec = OrderedDict([
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                                              "the name of this object, usually 'a' "
+                                              "or 'an' (e.g. 'a' sandwich, 'an' apple)"}),
+
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                                            "'sandwich' or 'apple'"}),
+
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("damage", {"type": "int", "tooltip": "defines health lost by player "
+                                              "if damaged by this item"}),
+
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                                             "from selling this item"}),
+
+        ("size", {"type": "choice", "choices": available_item_sizes,
+                  "tooltip": "defines size class for this item. "
+                             "items cannot contain items of a larger size class."})
+    ])
+
+
+class BatteryBuilder(ObjectBuilder):
+    objtype = Battery
+    spec = OrderedDict([
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                                              "the name of this object, usually 'a' "
+                                              "or 'an' (e.g. 'a' sandwich, 'an' apple)"}),
+
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                                            "'sandwich' or 'apple'"}),
+
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                                             "from selling this item"}),
+    ])
+
+
+class CoinsBuilder(ObjectBuilder):
+    objtype = Coins
+    spec = OrderedDict([
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                                             "from selling this item"}),
+    ])
+
+
+class PaperBagBuilder(ObjectBuilder):
+    objtype = PaperBag
+    spec = OrderedDict([
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                    "the name of this object, usually 'a' or 'an' (e.g. 'a' "
+                    "sandwich, 'an' apple)"}),
+
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                  "'sandwich' or 'apple'"}),
+
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                                             "from selling this item"}),
+    ])
+
+
+class SmallBagBuilder(ObjectBuilder):
+    objtype = SmallBag
+    spec = OrderedDict([
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                    "the name of this object, usually 'a' or 'an' (e.g. 'a' "
+                    "sandwich, 'an' apple)"}),
+
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                  "'sandwich' or 'apple'"}),
+
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                                             "from selling this item"}),
+        ("capacity", {"type": "int", "tooltip": "defines number of items this bag "
+                                                "can hold"}),
+        ("size", {"type": "choice", "choices": available_item_sizes,
+                  "tooltip": "defines size class for this item. "
+                             "items cannot contain items of a larger size class."})
+    ])
+
+
+class SmallTinBuilder(ObjectBuilder):
+    objtype = SmallTin
+    spec = OrderedDict([
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                    "the name of this object, usually 'a' or 'an' (e.g. 'a' "
+                    "sandwich, 'an' apple)"}),
+
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                  "'sandwich' or 'apple'"}),
+
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                                             "from selling this item"}),
+        ("capacity", {"type": "int", "tooltip": "defines number of items this bag "
+                                                "can hold"}),
+        ("size", {"type": "choice", "choices": available_item_sizes,
+                  "tooltip": "defines size class for this item. "
+                             "items cannot contain items of a larger size class."})
+    ])
+
+
+class BagBuilder(ObjectBuilder):
+    objtype = Bag
+    spec = OrderedDict([
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                    "the name of this object, usually 'a' or 'an' (e.g. 'a' "
+                    "sandwich, 'an' apple)"}),
+
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                  "'sandwich' or 'apple'"}),
+
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                                             "from selling this item"}),
+        ("capacity", {"type": "int", "tooltip": "defines number of items this bag "
+                                                "can hold"}),
+        ("size", {"type": "choice", "choices": available_item_sizes,
+                  "tooltip": "defines size class for this item. "
+                             "items cannot contain items of a larger size class."})
+    ])
+
+
+class LargeBagBuilder(ObjectBuilder):
+    objtype = LargeBag
+    spec = OrderedDict([
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                    "the name of this object, usually 'a' or 'an' (e.g. 'a' "
+                    "sandwich, 'an' apple)"}),
+
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                  "'sandwich' or 'apple'"}),
+
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                                             "from selling this item"}),
+        ("capacity", {"type": "int", "tooltip": "defines number of items this bag "
+                                                "can hold"}),
+        ("size", {"type": "choice", "choices": available_item_sizes,
+                  "tooltip": "defines size class for this item. "
+                             "items cannot contain items of a larger size class."})
+    ])
+
 
 class FoodBuilder(ObjectBuilder):
     objtype = Food
@@ -158,7 +324,15 @@ class ItemBrowser(QtWidgets.QDialog):
 
         self.classobjs = [
             FoodBuilder,
-            ItemBuilder
+            ItemBuilder,
+            FlashlightBuilder,
+            BatteryBuilder,
+            CoinsBuilder,
+            PaperBagBuilder,
+            SmallBagBuilder,
+            BagBuilder,
+            LargeBagBuilder,
+            SmallTinBuilder
         ]
 
         self.builders = {c.objtype.__name__: c() for c in self.classobjs}

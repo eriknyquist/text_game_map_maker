@@ -201,10 +201,6 @@ class QtAutoForm(QDialog):
 
         self.widgets = []
         for attrname in self.spec:
-            if attrname not in instance.__dict__:
-                raise RuntimeError("attribute '%s' is in spec but not found in "
-                                   "instance" % attrname)
-
             input_widget = getInputWidgetForAttr(instance, attrname, self.spec)
 
             attrvalue = self.getAttribute(attrname)
@@ -220,10 +216,10 @@ class QtAutoForm(QDialog):
         self.formGroupBox.setLayout(layout)
 
     def getAttribute(self, attrname):
-        return self.instance.__dict__[attrname]
+        return getattr(self.instance, attrname)
 
     def setAttribute(self, attrname, value):
-        self.instance.__dict__[attrname] = value
+        setattr(self.instance, attrname, value)
 
     def extraButtonClicked(self):
         pass
