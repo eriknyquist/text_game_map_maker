@@ -621,6 +621,9 @@ class MapEditor(QtWidgets.QDialog):
 
         self.deserializeFromSaveFile(attrs)
 
+        if _tiles:
+            self.clearButton.setEnabled(True)
+
     def deleteButtonClicked(self):
         tiles = self.getSelectedPositions()
 
