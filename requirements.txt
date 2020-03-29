@@ -1,2 +1,2 @@
 pyqt5
-text_game_maker==0.7.3
+text_game_maker==0.7.4
