@@ -141,7 +141,8 @@ class QtAutoForm(QDialog):
     NumButtons = 4
 
     def __init__(self, instance, title=None, spec=None, formTitle=None,
-                 scrollable=False, extra_button=False, extra_button_text=""):
+                 scrollable=False, headerText=None, extra_button=False,
+                 extra_button_text=""):
         super(QtAutoForm, self).__init__()
 
         if formTitle is None:
@@ -176,6 +177,12 @@ class QtAutoForm(QDialog):
             mainWidget = self.formGroupBox
 
         mainLayout = QVBoxLayout()
+
+        if headerText is not None:
+            label = QLabel(headerText, self)
+            label.setWordWrap(True)
+            mainLayout.addWidget(label)
+
         mainLayout.addWidget(mainWidget)
         mainLayout.addWidget(buttonBox)
 

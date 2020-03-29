@@ -50,11 +50,14 @@ class ObjectBuilder(object):
 
     def __init__(self):
         self.title = "%s editor" % self.__class__.objtype.__name__
+        self.formTitle = ""
+        self.desc = self.__class__.objtype.__doc__.strip()
 
     def build_instance(self, formclass=ContainerItemEditorAutoForm):
         ins = self.__class__.objtype()
-        dialog = formclass(ins, title="editor", formTitle=self.title,
-                           scrollable=True, spec=self.__class__.spec)
+        print(self.__class__.objtype.__doc__)
+        dialog = formclass(ins, title=self.title, formTitle=self.formTitle,
+                           headerText=self.desc, scrollable=True, spec=self.__class__.spec)
         dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         dialog.exec_()
         if not dialog.wasAccepted():
@@ -64,8 +67,8 @@ class ObjectBuilder(object):
         return ins
 
     def edit_instance(self, ins, formclass=ContainerItemEditorAutoForm):
-        dialog = formclass(ins, title="editor", formTitle=self.title,
-                           scrollable=True, spec=self.__class__.spec)
+        dialog = formclass(ins, title=self.title, formTitle=self.formTitle,
+                           headerText=self.desc, scrollable=True, spec=self.__class__.spec)
         dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         dialog.exec_()
         self.process_dialog_settings(ins)
