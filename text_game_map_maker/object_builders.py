@@ -9,7 +9,8 @@ from text_game_map_maker.qt_auto_form import QtAutoForm
 from text_game_maker.materials import materials
 from text_game_maker.game_objects.items import (
     Item, Food, ItemSize, Flashlight, Battery, Coins, PaperBag, SmallBag, Bag,
-    LargeBag, SmallTin, Lighter, BoxOfMatches, Lockpick, StrongLockpick
+    LargeBag, SmallTin, Lighter, BoxOfMatches, Lockpick, StrongLockpick, Container,
+    LargeContainer, Furniture
 )
 
 
@@ -51,7 +52,10 @@ class ObjectBuilder(object):
     def __init__(self):
         self.title = "%s editor" % self.__class__.objtype.__name__
         self.formTitle = ""
-        self.desc = ''.join(self.__class__.objtype.__doc__.strip().split('\n'))
+        self.desc = ""
+
+        if self.__class__.objtype.__doc__:
+            self.desc = ''.join(self.__class__.objtype.__doc__.strip().split('\n'))
 
     def build_instance(self, formclass=ContainerItemEditorAutoForm):
         ins = self.__class__.objtype()
@@ -87,8 +91,6 @@ class ObjectBuilder(object):
 class ItemBuilder(ObjectBuilder):
     objtype = Item
     spec = OrderedDict([
-        ("material", {"type": "choice", "choices": materials.get_materials(),
-                      "tooltip": "Set this object's material type"}),
         ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
                                               "the name of this object, usually 'a' "
                                               "or 'an' (e.g. 'a' sandwich, 'an' apple)"}),
@@ -116,8 +118,70 @@ class ItemBuilder(ObjectBuilder):
 
         ("size", {"type": "choice", "choices": available_item_sizes,
                   "tooltip": "defines size class for this item. "
-                             "items cannot contain items of a larger size class."})
+                             "items cannot contain items of a larger size class."}),
+
+        ("material", {"type": "choice", "choices": materials.get_materials(),
+                      "tooltip": "Set this object's material type"})
     ])
+
+
+class FurnitureBuilder(ObjectBuilder):
+    objtype = Furniture
+    spec = OrderedDict([
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                                              "the name of this object, usually 'a' "
+                                              "or 'an' (e.g. 'a' sandwich, 'an' apple)"}),
+
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                                            "'sandwich' or 'apple'"}),
+
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("combustible", {"type": "bool", "tooltip": "defines whether this item "
+                                                    "will burn"}),
+
+        ("size", {"type": "choice", "choices": available_item_sizes,
+                  "tooltip": "defines size class for this item. "
+                             "items cannot contain items of a larger size class."}),
+
+        ("material", {"type": "choice", "choices": materials.get_materials(),
+                      "tooltip": "Set this object's material type"})
+    ])
+
+
+class ContainerBuilder(ObjectBuilder):
+    objtype = Container
+    spec = OrderedDict([
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                                              "the name of this object, usually 'a' "
+                                              "or 'an' (e.g. 'a' sandwich, 'an' apple)"}),
+
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                                            "'sandwich' or 'apple'"}),
+
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("combustible", {"type": "bool", "tooltip": "defines whether this item "
+                                                    "will burn"}),
+
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                                             "from selling this item"}),
+
+        ("size", {"type": "choice", "choices": available_item_sizes,
+                  "tooltip": "defines size class for this item. "
+                             "items cannot contain items of a larger size class."}),
+
+        ("material", {"type": "choice", "choices": materials.get_materials(),
+                      "tooltip": "Set this object's material type"})
+    ])
+
+
+class LargeContainerBuilder(ObjectBuilder):
+    objtype = LargeContainer
+    spec = ContainerBuilder.spec
+
 
 class FlashlightBuilder(ObjectBuilder):
     objtype = Flashlight
@@ -305,8 +369,10 @@ class SmallBagBuilder(ObjectBuilder):
 
         ("value", {"type": "int", "tooltip": "defines coins gained by player "
                                              "from selling this item"}),
+
         ("capacity", {"type": "int", "tooltip": "defines number of items this bag "
                                                 "can hold"}),
+
         ("size", {"type": "choice", "choices": available_item_sizes,
                   "tooltip": "defines size class for this item. "
                              "items cannot contain items of a larger size class."})
@@ -328,8 +394,10 @@ class SmallTinBuilder(ObjectBuilder):
 
         ("value", {"type": "int", "tooltip": "defines coins gained by player "
                                              "from selling this item"}),
+
         ("capacity", {"type": "int", "tooltip": "defines number of items this bag "
                                                 "can hold"}),
+
         ("size", {"type": "choice", "choices": available_item_sizes,
                   "tooltip": "defines size class for this item. "
                              "items cannot contain items of a larger size class."})
@@ -351,8 +419,10 @@ class BagBuilder(ObjectBuilder):
 
         ("value", {"type": "int", "tooltip": "defines coins gained by player "
                                              "from selling this item"}),
+
         ("capacity", {"type": "int", "tooltip": "defines number of items this bag "
                                                 "can hold"}),
+
         ("size", {"type": "choice", "choices": available_item_sizes,
                   "tooltip": "defines size class for this item. "
                              "items cannot contain items of a larger size class."})
@@ -374,8 +444,10 @@ class LargeBagBuilder(ObjectBuilder):
 
         ("value", {"type": "int", "tooltip": "defines coins gained by player "
                                              "from selling this item"}),
+
         ("capacity", {"type": "int", "tooltip": "defines number of items this bag "
                                                 "can hold"}),
+
         ("size", {"type": "choice", "choices": available_item_sizes,
                   "tooltip": "defines size class for this item. "
                              "items cannot contain items of a larger size class."})
@@ -385,9 +457,6 @@ class LargeBagBuilder(ObjectBuilder):
 class FoodBuilder(ObjectBuilder):
     objtype = Food
     spec = OrderedDict([
-        ("material", {"type": "choice", "choices": materials.get_materials(),
-                      "tooltip": "Set this object's material type"}),
-
         ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
                     "the name of this object, usually 'a' or 'an' (e.g. 'a' "
                     "sandwich, 'an' apple)"}),
@@ -409,7 +478,10 @@ class FoodBuilder(ObjectBuilder):
 
         ("size", {"type": "choice", "choices": available_item_sizes,
                   "tooltip": "defines size class for this item. "
-                             "items cannot contain items of a larger size class."})
+                             "items cannot contain items of a larger size class."}),
+
+        ("material", {"type": "choice", "choices": materials.get_materials(),
+                      "tooltip": "Set this object's material type"})
     ])
 
 
@@ -439,7 +511,10 @@ class ItemBrowser(QtWidgets.QDialog):
             LighterBuilder,
             BoxOfMatchesBuilder,
             LockpickBuilder,
-            StrongLockpickBuilder
+            StrongLockpickBuilder,
+            ContainerBuilder,
+            LargeContainerBuilder,
+            FurnitureBuilder
         ]
 
         self.builders = {c.objtype.__name__: c() for c in self.classobjs}
