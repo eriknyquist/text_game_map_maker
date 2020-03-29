@@ -6,6 +6,7 @@ import traceback
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+from text_game_map_maker.utils import yesNoDialog, errorDialog
 from text_game_map_maker import forms, scrollarea, tgmdata
 from text_game_map_maker.door_editor import DoorEditor
 from text_game_map_maker.object_builders import TileItemBrowser
@@ -351,8 +352,8 @@ class MapEditor(QtWidgets.QDialog):
         self.buttonAreaLayout.addWidget(fileButtonGroup)
 
     def warningBeforeQuit(self):
-        return self.yesNoDialog("Are you sure?", "Are you sure you want to quit?"
-                                " You will lose any unsaved data.")
+        return yesNoDialog(self, "Are you sure?", "Are you sure you want to quit?"
+                                 " You will lose any unsaved data.")
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
@@ -450,24 +451,6 @@ class MapEditor(QtWidgets.QDialog):
         self.selectedPositions = []
 
         self.enableSelectionDependentItems()
-
-    def yesNoDialog(self, header="", msg="Are you sure?"):
-        reply = QtWidgets.QMessageBox.question(self, header, msg,
-                                               (QtWidgets.QMessageBox.Yes |
-                                               QtWidgets.QMessageBox.No |
-                                               QtWidgets.QMessageBox.Cancel),
-                                               QtWidgets.QMessageBox.Cancel)
-
-        return reply == QtWidgets.QMessageBox.Yes
-
-    def errorDialog(self, heading="Error", message="Unrecoverable error occurred"):
-        msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Critical)
-        msg.setText(heading)
-        msg.setInformativeText(message)
-        msg.setWindowTitle("Critical error!")
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.exec_()
 
     def tile_id_in_map_data(self, tile_list, tile_id):
         for tiledata in tile_list:
@@ -622,8 +605,8 @@ class MapEditor(QtWidgets.QDialog):
             return
 
         if not os.path.exists(filename):
-            self.errorDialog("Can't find file", "There doesn't seem to be a "
-                             "file called '%s'" % filename)
+            errorDialog(self, "Can't find file", "There doesn't seem to be a "
+                        "file called '%s'" % filename)
 
         try:
             with open(filename, 'rb') as fh:
@@ -631,8 +614,8 @@ class MapEditor(QtWidgets.QDialog):
                 strdata = zlib.decompress(data).decode("utf-8")
                 attrs = json.loads(strdata)
         except Exception as e:
-            self.errorDialog("Error loading saved game state",
-                             "Unable to load saved game data from file %s: %s"
+            errorDialog(self, "Error loading saved game state",
+                        "Unable to load saved game data from file %s: %s"
                              % (filename, str(e)))
             return
 
@@ -642,7 +625,7 @@ class MapEditor(QtWidgets.QDialog):
         tiles = self.getSelectedPositions()
 
         if not tiles:
-            self.errorDialog("Unable to delete tile", "No selected tiles")
+            errorDialog(self, "Unable to delete tile", "No selected tiles")
             return
 
         if len(tiles) == 1:
@@ -652,7 +635,7 @@ class MapEditor(QtWidgets.QDialog):
         else:
             msg = "Are you sure you want to delete %d tiles?" % len(tiles)
 
-        reply = self.yesNoDialog("Are you sure?", msg)
+        reply = yesNoDialog(self, "Are you sure?", msg)
         if not reply:
             return
 
@@ -729,8 +712,8 @@ class MapEditor(QtWidgets.QDialog):
         self.group_mask = new_mask
 
     def clearButtonClicked(self):
-        reply = self.yesNoDialog("Really clear all tiles?", "Are you sure you "
-                                 "want to clear all tiles? you will lose any unsaved data.")
+        reply = yesNoDialog(self, "Really clear all tiles?", "Are you sure you "
+                            "want to clear all tiles? you will lose any unsaved data.")
 
         if not reply:
             return
@@ -873,8 +856,8 @@ class MapEditor(QtWidgets.QDialog):
 
     def saveAsButtonClicked(self):
         if self.startTilePosition is None:
-            self.errorDialog("Unable to save map", "No start tile is set. You "
-                             "must set a start tile before saving.")
+            errorDialog(self, "Unable to save map", "No start tile is set. You "
+                        "must set a start tile before saving.")
             return
 
         filename = self.saveFileDialog()
@@ -892,16 +875,16 @@ class MapEditor(QtWidgets.QDialog):
             with open(filename, 'wb') as fh:
                 fh.write(compressed)
         except Exception:
-            self.errorDialog("Error saving map data",
-                             "Unable to save map data to file %s:\n\n%s"
-                             % (filename, traceback.format_exc()))
+            errorDialog(self, "Error saving map data",
+                        "Unable to save map data to file %s:\n\n%s"
+                        % (filename, traceback.format_exc()))
 
         self.setSaveEnabled(False)
 
     def loadFromFile(self, filename):
         if not os.path.exists(filename):
-            self.errorDialog("Can't find file", "There doesn't seem to be a "
-                             "file called '%s'" % filename)
+            errorDialog(self, "Can't find file", "There doesn't seem to be a "
+                        "file called '%s'" % filename)
             return
 
         try:
@@ -912,9 +895,9 @@ class MapEditor(QtWidgets.QDialog):
             attrs = json.loads(decompressed)
             self.deserialize(attrs)
         except Exception:
-            self.errorDialog("Error loading saved map data",
-                             "Unable to load saved map data from file %s:\n\n%s"
-                             % (filename, traceback.format_exc()))
+            errorDialog(self, "Error loading saved map data",
+                        "Unable to load saved map data from file %s:\n\n%s"
+                        % (filename, traceback.format_exc()))
 
         self.loaded_file = filename
         if _tiles:
@@ -1082,9 +1065,9 @@ class MapEditor(QtWidgets.QDialog):
                 return None
 
             if str(settings.tile_id).strip() == '':
-                self.errorDialog("Invalid tile ID", "tile ID field cannot be empty")
+                errorDialog(self, "Invalid tile ID", "tile ID field cannot be empty")
             elif (tileobj.tile_id != settings.tile_id) and self.tileIDExists(settings.tile_id):
-                self.errorDialog("Unable to create tile", "Tile ID '%s' already in use!"
+                errorDialog(self, "Unable to create tile", "Tile ID '%s' already in use!"
                                  % settings.tile_id)
             else:
                 complete = True

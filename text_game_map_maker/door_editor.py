@@ -1,5 +1,6 @@
 from text_game_map_maker import forms
 from text_game_map_maker.qt_auto_form import QtAutoForm
+from text_game_map_maker.utils import yesNoDialog, errorDialog
 
 from text_game_maker.tile import tile
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -104,14 +105,13 @@ class DoorEditor(QtWidgets.QDialog):
             return
 
         if self.parent.tileIDExists(doorobj.tile_id):
-            self.parent.errorDialog("Unable to create door",
-                                  "Tile ID '%s' is already is use!"
-                                    % doorobj.tile_id)
+            errorDialog(self, "Unable to create door",
+                        "Tile ID '%s' is already is use!" % doorobj.tile_id)
             return
 
         if direction in self.directions:
-            self.parent.errorDialog("Unable to create door",
-                                  "There is already a door to the %s" % direction)
+            errorDialog(self, "Unable to create door",
+                        "There is already a door to the %s" % direction)
             return
 
         self.directions[direction] = doorobj
@@ -152,9 +152,8 @@ class DoorEditor(QtWidgets.QDialog):
 
         if old_tile_id != new_doorobj.tile_id:
             if self.parent.tileIDExists(new_doorobj.tile_id):
-                self.parent.errorDialog("Unable to change door settings",
-                                        "Tile ID '%s' is already is use!"
-                                        % new_doorobj.tile_id)
+                errorDialog(self, "Unable to change door settings",
+                            "Tile ID '%s' is already is use!" % new_doorobj.tile_id)
 
             new_doorobj.set_tile_id(new_doorobj.tile_id)
             return
@@ -163,9 +162,8 @@ class DoorEditor(QtWidgets.QDialog):
 
         if new_direction != direction:
             if new_direction in self.directions:
-                self.parent.errorDialog("Unable to change door settings",
-                                        "You already have a door to the %s"
-                                        % new_direction)
+                errorDialog(self, "Unable to change door settings",
+                            "You already have a door to the %s" % new_direction)
 
             # Remove connection to old door
             setattr(self.tile, direction, doorobj.replacement_tile)
@@ -198,9 +196,9 @@ class DoorEditor(QtWidgets.QDialog):
         direction = self.table.item(selectedRow, 2).text()
         doorobj = getattr(self.tile, direction)
 
-        reply = self.parent.yesNoDialog("Really delete door?",
-                                      "Are you sure you want do delete this "
-                                      "door (%s)?" % doorobj.tile_id)
+        reply = yesNoDialog(self, "Really delete door?",
+                            "Are you sure you want do delete this "
+                            "door (%s)?" % doorobj.tile_id)
         if not reply:
             return
 
@@ -249,7 +247,7 @@ class DoorEditor(QtWidgets.QDialog):
                 return False
 
             if str(settings_obj.tile_id).strip() == '':
-                self.parent.errorDialog("Invalid tile ID", "tile ID field cannot be empty")
+                errorDialog(self, "Invalid tile ID", "tile ID field cannot be empty")
 
             else:
                 complete = True
@@ -315,9 +313,10 @@ class DoorEditor(QtWidgets.QDialog):
 
         # Check if there's already a door in this direction on the adjacent tile
         if self.oppositeDoorExists(replace, settings.direction):
-            self.errorDialog("Unable to add door", "There is an existing door "
-                             " locked from the opposite direction (tile ID '%s')"
-                             % replace.tile_id)
+            errorDialog(self, "Unable to add door", "There is an existing door "
+                        " locked from the opposite direction (tile ID '%s')"
+                        % replace.tile_id)
+
             return None, None
 
         doorobj = self.formToInstance(settings, doorobj, olddir, replace)

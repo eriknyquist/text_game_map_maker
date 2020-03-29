@@ -2,6 +2,7 @@ from collections import OrderedDict
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+from text_game_map_maker.utils import yesNoDialog
 from text_game_map_maker.constants import available_item_sizes
 from text_game_map_maker.qt_auto_form import QtAutoForm
 
@@ -26,7 +27,7 @@ class ItemEditorAutoForm(QtAutoForm):
 
     def setAttribute(self, attrname, value):
         if attrname == 'size':
-            settattr(self.instance, attrname, getattr(ItemSize, value))
+            setattr(self.instance, attrname, getattr(ItemSize, value))
             return
 
         setattr(self.instance, attrname, value)
@@ -431,9 +432,8 @@ class ItemBrowser(QtWidgets.QDialog):
 
         item = self.row_items[selectedRow]
 
-        reply = self.parent.yesNoDialog("Really delete item?",
-                                      "Are you sure you want do delete this "
-                                      "item (%s)?" % item.name)
+        reply = yesNoDialog(self, "Really delete item?",
+                            "Are you sure you want do delete this item (%s)?" % item.name)
         if not reply:
             return
 
