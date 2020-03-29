@@ -9,7 +9,7 @@ from text_game_map_maker.qt_auto_form import QtAutoForm
 from text_game_maker.materials import materials
 from text_game_maker.game_objects.items import (
     Item, Food, ItemSize, Flashlight, Battery, Coins, PaperBag, SmallBag, Bag,
-    LargeBag, SmallTin
+    LargeBag, SmallTin, Lighter, BoxOfMatches, Lockpick, StrongLockpick
 )
 
 
@@ -51,7 +51,7 @@ class ObjectBuilder(object):
     def __init__(self):
         self.title = "%s editor" % self.__class__.objtype.__name__
         self.formTitle = ""
-        self.desc = self.__class__.objtype.__doc__.strip()
+        self.desc = ''.join(self.__class__.objtype.__doc__.strip().split('\n'))
 
     def build_instance(self, formclass=ContainerItemEditorAutoForm):
         ins = self.__class__.objtype()
@@ -138,6 +138,9 @@ class FlashlightBuilder(ObjectBuilder):
         ("value", {"type": "int", "tooltip": "defines coins gained by player "
                                              "from selling this item"}),
 
+        ("fuel_decrement", {"type": "float", "label": "fuel decrement",
+                      "tooltip": "defines how much fuel is lost per item use"}),
+
         ("size", {"type": "choice", "choices": available_item_sizes,
                   "tooltip": "defines size class for this item. "
                              "items cannot contain items of a larger size class."})
@@ -159,6 +162,102 @@ class BatteryBuilder(ObjectBuilder):
 
         ("value", {"type": "int", "tooltip": "defines coins gained by player "
                                              "from selling this item"}),
+
+        ("fuel", {"type": "float", "tooltip": "current fuel level"})
+    ])
+
+
+class LighterBuilder(ObjectBuilder):
+    objtype = Lighter
+    spec = OrderedDict([
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                                              "the name of this object, usually 'a' "
+                                              "or 'an' (e.g. 'a' sandwich, 'an' apple)"}),
+
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                                            "'sandwich' or 'apple'"}),
+
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                                             "from selling this item"}),
+
+        ("max_fuel", {"type": "float", "label": "Max. fuel",
+                      "tooltip": "defines maximum possible fuel level value"}),
+
+        ("fuel_decrement", {"type": "float", "label": "fuel decrement",
+                      "tooltip": "defines how much fuel is lost per item use"}),
+
+        ("fuel", {"type": "float", "tooltip": "current fuel level"})
+    ])
+
+
+class BoxOfMatchesBuilder(ObjectBuilder):
+    objtype = BoxOfMatches
+    spec = OrderedDict([
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                                              "the name of this object, usually 'a' "
+                                              "or 'an' (e.g. 'a' sandwich, 'an' apple)"}),
+
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                                            "'sandwich' or 'apple'"}),
+
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                                             "from selling this item"}),
+
+        ("max_fuel", {"type": "float", "label": "Max. fuel",
+                      "tooltip": "defines maximum possible fuel level value"}),
+
+        ("fuel_decrement", {"type": "float", "label": "fuel decrement",
+                      "tooltip": "defines how much fuel is lost per item use"}),
+
+        ("fuel", {"type": "float", "tooltip": "current fuel level"})
+    ])
+
+
+class LockpickBuilder(ObjectBuilder):
+    objtype = Lockpick
+    spec = OrderedDict([
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                                              "the name of this object, usually 'a' "
+                                              "or 'an' (e.g. 'a' sandwich, 'an' apple)"}),
+
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                                            "'sandwich' or 'apple'"}),
+
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                                             "from selling this item"}),
+
+        ("uses", {"type": "int", "tooltip": "number of times lockpick can be "
+                                            "used before breaking"})
+    ])
+
+
+class StrongLockpickBuilder(ObjectBuilder):
+    objtype = StrongLockpick
+    spec = OrderedDict([
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                                              "the name of this object, usually 'a' "
+                                              "or 'an' (e.g. 'a' sandwich, 'an' apple)"}),
+
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                                            "'sandwich' or 'apple'"}),
+
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                                             "from selling this item"}),
+
+        ("uses", {"type": "int", "tooltip": "number of times lockpick can be "
+                                            "used before breaking"})
     ])
 
 
@@ -336,7 +435,11 @@ class ItemBrowser(QtWidgets.QDialog):
             SmallBagBuilder,
             BagBuilder,
             LargeBagBuilder,
-            SmallTinBuilder
+            SmallTinBuilder,
+            LighterBuilder,
+            BoxOfMatchesBuilder,
+            LockpickBuilder,
+            StrongLockpickBuilder
         ]
 
         self.builders = {c.objtype.__name__: c() for c in self.classobjs}
