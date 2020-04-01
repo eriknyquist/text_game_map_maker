@@ -1053,6 +1053,8 @@ class MapEditor(QtWidgets.QDialog):
         else:
             tileobj = tile.Tile()
             settings.tile_id = "tile%d" % tile.Tile.tile_id
+            settings.name = "a room"
+            settings.description = "in a room"
 
         complete = False
         while not complete:
