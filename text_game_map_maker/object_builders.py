@@ -9,7 +9,7 @@ from text_game_maker.materials import materials
 from text_game_maker.game_objects.items import (
     Item, Food, ItemSize, Flashlight, Battery, Coins, PaperBag, SmallBag, Bag,
     LargeBag, SmallTin, Lighter, BoxOfMatches, Lockpick, StrongLockpick, Container,
-    LargeContainer, Furniture
+    LargeContainer, Furniture, Blueprint
 )
 
 class ObjectBuilder(object):
@@ -139,6 +139,24 @@ class ContainerBuilder(ObjectBuilder):
 
         ("material", {"type": "choice", "choices": materials.get_materials(),
                       "tooltip": "Set this object's material type"})
+    ])
+
+
+class BlueprintBuilder(ObjectBuilder):
+    objtype = Blueprint
+    spec = OrderedDict([
+        ("prefix", {"type": "str", "tooltip": "Set the word that should precede "
+                                              "the name of this object, usually 'a' "
+                                              "or 'an' (e.g. 'a' sandwich, 'an' apple)"}),
+
+        ("name", {"type": "str", "tooltip": "name of this object, e.g. "
+                                            "'sandwich' or 'apple'"}),
+
+        ("location", {"type": "str", "tooltip": "location of object, e.g. "
+                                                "'on the floor' or 'hanging from the wall'"}),
+
+        ("value", {"type": "int", "tooltip": "defines coins gained by player "
+                                             "from selling this item"}),
     ])
 
 

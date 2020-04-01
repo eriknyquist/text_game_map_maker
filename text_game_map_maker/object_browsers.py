@@ -39,6 +39,17 @@ class ContainerItemEditorAutoForm(ItemEditorAutoForm):
         dialog.exec_()
 
 
+class BlueprintItemEditorAutoForm(ItemEditorAutoForm):
+    def __init__(self, *args, **kwargs):
+        QtAutoForm.__init__(self, *args, **kwargs, extra_button=True,
+                            extra_button_text="ingredients...")
+
+    def extraButtonClicked(self):
+        dialog = BlueprintItemBrowser(self, self.instance)
+        dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+        dialog.exec_()
+
+
 class ItemBrowser(QtWidgets.QDialog):
     """
     Abstract implementation of class to browse items contained within another item
@@ -68,7 +79,8 @@ class ItemBrowser(QtWidgets.QDialog):
             builders.StrongLockpickBuilder,
             builders.ContainerBuilder,
             builders.LargeContainerBuilder,
-            builders.FurnitureBuilder
+            builders.FurnitureBuilder,
+            builders.BlueprintBuilder
         ]
 
         self.builders = {c.objtype.__name__: c() for c in self.classobjs}
@@ -137,7 +149,13 @@ class ItemBrowser(QtWidgets.QDialog):
             return
 
         builder = self.builders[item]
-        instance = builder.build_instance(formclass=ContainerItemEditorAutoForm)
+        if builder.__class__ == builders.BlueprintBuilder:
+            form = BlueprintItemEditorAutoForm
+            print("ADDING BLUEPRINT")
+        else:
+            form = ContainerItemEditorAutoForm
+
+        instance = builder.build_instance(formclass=form)
         if not instance:
             return
 
@@ -154,7 +172,12 @@ class ItemBrowser(QtWidgets.QDialog):
         classname = item.__class__.__name__
         builder = self.builders[classname]
 
-        if not builder.edit_instance(item, formclass=ContainerItemEditorAutoForm):
+        if builder.__class__ == builders.BlueprintBuilder:
+            form = BlueprintItemEditorAutoForm
+        else:
+            form = ContainerItemEditorAutoForm
+
+        if not builder.edit_instance(item, formclass=form):
             return
 
         # Re-draw door browser table
@@ -240,3 +263,23 @@ class ContainerItemBrowser(ItemBrowser):
     def getRowInfo(self, item):
         loc = 'inside %s' % self.container.__class__.__name__
         return item.__class__.__name__, item.name, loc
+
+
+class BlueprintItemBrowser(ItemBrowser):
+    """
+    Concrete item browser implementation to browse ingredient items in a Blueprint
+    """
+
+    def populateTable(self):
+        self.row_items = []
+
+        self.table.setRowCount(0)
+        for item in self.container.ingredients:
+            self.addRow(item)
+            self.row_items.append(item)
+
+    def addItemToContainer(self, item):
+        self.container.ingredients.append(item)
+
+    def getRowInfo(self, item):
+        return item.__class__.__name__, item.name, item.location
