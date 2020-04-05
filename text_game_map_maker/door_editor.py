@@ -208,6 +208,9 @@ class DoorEditor(QtWidgets.QDialog):
         setattr(self.tile, direction, doorobj.replacement_tile)
         self.table.removeRow(selectedRow)
 
+        # Re-draw button
+        button.update()
+
         # Enabling saving if it was disabled
         self.parent.setSaveEnabled(True)
 
