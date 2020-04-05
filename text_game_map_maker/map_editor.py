@@ -765,12 +765,14 @@ class MapEditor(QtWidgets.QDialog):
         doors_dialog = DoorEditor(self, tileobj)
         doors_dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         doors_dialog.exec_()
+        self.setSaveEnabled(True)
 
     def itemButtonClicked(self):
         tileobj = _tiles[self.selectedPosition]
         items_dialog = TileItemBrowser(self, tileobj)
         items_dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         items_dialog.exec_()
+        self.setSaveEnabled(True)
 
     def wallButtonClicked(self):
         tileobj = _tiles[self.selectedPosition]
@@ -1314,6 +1316,7 @@ class MapEditor(QtWidgets.QDialog):
         else:
             self.moveSelectionMask()
 
+        self.setSaveEnabled(True)
         self.tracking_tile_button_enter = False
         self.group_mask = []
 
