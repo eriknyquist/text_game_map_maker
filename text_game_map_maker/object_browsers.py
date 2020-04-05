@@ -197,6 +197,7 @@ class ItemBrowser(QtWidgets.QDialog):
 
         item.delete()
         self.table.removeRow(selectedRow)
+        self.populateTable()
 
     def addRow(self, item):
         nextFreeRow = self.table.rowCount()
