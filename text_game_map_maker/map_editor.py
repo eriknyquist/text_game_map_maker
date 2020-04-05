@@ -1254,7 +1254,7 @@ class MapEditor(QtWidgets.QDialog):
         new_tiles = []
         for i in range(len(orig_positions)):
             src_tile = self.tileAtPosition(*orig_positions[i])
-            tileobj = tile.Tile()
+            tileobj = src_tile.copy()
             tileobj.set_tile_id(self.getCopiedTileId(src_tile.tile_id))
             tile_id_map[src_tile.tile_id] = tileobj.tile_id
             new_tiles.append(tileobj)
@@ -1293,16 +1293,6 @@ class MapEditor(QtWidgets.QDialog):
                     dest_adj = None
 
                 setattr(dest_tile, attr, dest_adj)
-
-            # Handle remaining attributes
-            for attr in src_tile.__dict__:
-                if attr in directions:
-                    continue
-
-                if attr == "tile_id":
-                    continue
-
-                setattr(dest_tile, attr, getattr(src_tile, attr))
 
             _tiles[self.group_mask[i]] = dest_tile
             button = self.buttonAtPosition(*self.group_mask[i])
