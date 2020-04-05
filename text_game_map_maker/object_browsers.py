@@ -4,6 +4,7 @@ from text_game_map_maker.utils import yesNoDialog
 from text_game_map_maker.constants import available_item_sizes
 from text_game_map_maker.qt_auto_form import QtAutoForm
 from text_game_map_maker import object_builders as builders
+from text_game_map_maker import saved_objects, utils
 
 from text_game_maker.game_objects.items import ItemSize
 
@@ -107,13 +108,19 @@ class ItemBrowser(QtWidgets.QDialog):
         buttonBox.rejected.connect(self.reject)
 
         self.addButton = QtWidgets.QPushButton()
+        self.savedItemButton = QtWidgets.QPushButton()
+        self.saveButton = QtWidgets.QPushButton()
         self.editButton = QtWidgets.QPushButton()
         self.deleteButton = QtWidgets.QPushButton()
         self.addButton.setText("Add item")
+        self.savedItemButton.setText("Add saved")
+        self.saveButton.setText("Save item")
         self.editButton.setText("Edit item")
         self.deleteButton.setText("Delete item")
 
         self.editButton.clicked.connect(self.editButtonClicked)
+        self.savedItemButton.clicked.connect(self.savedItemButtonClicked)
+        self.saveButton.clicked.connect(self.saveButtonClicked)
         self.addButton.clicked.connect(self.addButtonClicked)
         self.deleteButton.clicked.connect(self.deleteButtonClicked)
 
@@ -121,6 +128,8 @@ class ItemBrowser(QtWidgets.QDialog):
         buttonLayout.addWidget(self.addButton)
         buttonLayout.addWidget(self.editButton)
         buttonLayout.addWidget(self.deleteButton)
+        buttonLayout.addWidget(self.savedItemButton)
+        buttonLayout.addWidget(self.saveButton)
         self.buttonGroupBox = QtWidgets.QGroupBox("")
         self.buttonGroupBox.setLayout(buttonLayout)
 
@@ -139,6 +148,34 @@ class ItemBrowser(QtWidgets.QDialog):
     def sizeHint(self):
         return QtCore.QSize(500, 400)
 
+    def savedItemButtonClicked(self):
+        object_names = saved_objects.get_object_names()
+        if len(object_names) == 0:
+            utils.infoDialog(self, message="No saved objects added yet")
+            return
+
+        name, accepted = QtWidgets.QInputDialog.getItem(self,
+                                                        "select saved object",
+                                                        "Select a saved object",
+                                                        saved_objects.get_object_names(),
+                                                        0, False)
+        if not accepted:
+            return
+
+        item = saved_objects.get_object_by_name(name)
+        self.addRow(item)
+        self.row_items.append(item)
+        self.addItemToContainer(item)
+
+    def saveButtonClicked(self):
+        selectedRow = self.table.currentRow()
+        if selectedRow < 0:
+            return
+
+        item = self.row_items[selectedRow]
+        saved_objects.save_object(item)
+        utils.infoDialog(self, message="Object '%s' saved successfully" % item.name)
+
     def addButtonClicked(self):
         item, accepted = QtWidgets.QInputDialog.getItem(self,
                                                         "select object type",
@@ -151,7 +188,6 @@ class ItemBrowser(QtWidgets.QDialog):
         builder = self.builders[item]
         if builder.__class__ == builders.BlueprintBuilder:
             form = BlueprintItemEditorAutoForm
-            print("ADDING BLUEPRINT")
         else:
             form = ContainerItemEditorAutoForm
 

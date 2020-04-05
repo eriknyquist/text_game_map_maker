@@ -19,3 +19,12 @@ def errorDialog(parent, heading="Error", message="Unrecoverable error occurred")
     msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
     msg.exec_()
 
+def infoDialog(parent, heading="", message=""):
+    msg = QtWidgets.QMessageBox(parent)
+    msg.setIcon(QtWidgets.QMessageBox.Information)
+    msg.setText(heading)
+    msg.setInformativeText(message)
+    msg.setWindowTitle("Information")
+    msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+    msg.exec_()
+
