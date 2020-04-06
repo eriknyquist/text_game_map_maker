@@ -9,7 +9,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from text_game_map_maker.utils import yesNoDialog, errorDialog
 from text_game_map_maker import forms, scrollarea, tgmdata
 from text_game_map_maker.door_editor import DoorEditor
-from text_game_map_maker.object_browsers import TileItemBrowser
+from text_game_map_maker.object_browsers import TileItemBrowser, SavedItemBrowser
 from text_game_map_maker import tile_button
 from text_game_map_maker.qt_auto_form import QtAutoForm
 from text_game_maker.game_objects import __object_model_version__ as obj_version
@@ -267,13 +267,15 @@ class MapEditor(QtWidgets.QDialog):
         self.copyButton = QtWidgets.QPushButton()
         self.saveButton = QtWidgets.QPushButton()
         self.loadButton = QtWidgets.QPushButton()
+        self.savedObjectsButton = QtWidgets.QPushButton()
         self.loadFromSavedGameButton = QtWidgets.QPushButton()
 
         self.deleteButton.setText("Delete")
         self.clearButton.setText("Clear all")
-        self.doorButton.setText("Doors...")
-        self.wallButton.setText("Walls...")
-        self.itemButton.setText("Items...")
+        self.doorButton.setText("Doors..")
+        self.wallButton.setText("Walls..")
+        self.itemButton.setText("Items..")
+        self.savedObjectsButton.setText("Saved objects..")
         self.moveButton.setText("Move")
         self.copyButton.setText("Copy")
         self.saveButton.setText("Save")
@@ -289,6 +291,7 @@ class MapEditor(QtWidgets.QDialog):
         self.copyButton.clicked.connect(self.copyButtonClicked)
         self.saveButton.clicked.connect(self.saveButtonClicked)
         self.loadButton.clicked.connect(self.loadButtonClicked)
+        self.savedObjectsButton.clicked.connect(self.savedObjectsButtonClicked)
         self.loadFromSavedGameButton.clicked.connect(self.loadFromSavedGameButtonClicked)
 
         self.startTileCheckBox = QtWidgets.QCheckBox()
@@ -314,6 +317,7 @@ class MapEditor(QtWidgets.QDialog):
         tileButtonLayout.addWidget(self.doorButton)
         tileButtonLayout.addWidget(self.wallButton)
         tileButtonLayout.addWidget(self.itemButton)
+        tileButtonLayout.addWidget(self.savedObjectsButton)
         tileButtonLayout.addLayout(checkBoxLayout)
         tileButtonGroup = QtWidgets.QGroupBox("Tile Contents")
         tileButtonGroup.setAlignment(QtCore.Qt.AlignCenter)
@@ -770,6 +774,12 @@ class MapEditor(QtWidgets.QDialog):
     def itemButtonClicked(self):
         tileobj = _tiles[self.selectedPosition]
         items_dialog = TileItemBrowser(self, tileobj)
+        items_dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+        items_dialog.exec_()
+        self.setSaveEnabled(True)
+
+    def savedObjectsButtonClicked(self):
+        items_dialog = SavedItemBrowser(self, None)
         items_dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         items_dialog.exec_()
         self.setSaveEnabled(True)

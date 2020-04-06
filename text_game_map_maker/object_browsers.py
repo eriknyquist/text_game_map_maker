@@ -231,6 +231,7 @@ class ItemBrowser(QtWidgets.QDialog):
         if not reply:
             return
 
+        self.deleteItemFromContainer(item)
         item.delete()
         self.table.removeRow(selectedRow)
         self.populateTable()
@@ -247,6 +248,9 @@ class ItemBrowser(QtWidgets.QDialog):
         self.table.setItem(nextFreeRow, 0, item1)
         self.table.setItem(nextFreeRow, 1, item2)
         self.table.setItem(nextFreeRow, 2, item3)
+
+    def deleteItemFromContainer(self, item):
+        pass
 
     def getRowInfo(self, item):
         raise NotImplementedError()
@@ -320,3 +324,27 @@ class BlueprintItemBrowser(ItemBrowser):
 
     def getRowInfo(self, item):
         return item.__class__.__name__, item.name, item.location
+
+
+class SavedItemBrowser(ItemBrowser):
+    """
+    Concrete item browser implementation to browse custom objects saved for re-use
+    """
+
+    def populateTable(self):
+        self.row_items = []
+
+        self.table.setRowCount(0)
+        saved_objs = saved_objects.get_objects()
+        for name in saved_objs:
+            self.addRow(saved_objs[name])
+            self.row_items.append(saved_objs[name])
+
+    def addItemToContainer(self, item):
+        saved_objects.save_object(item)
+
+    def getRowInfo(self, item):
+        return item.__class__.__name__, item.name, "Saved objects database"
+
+    def deleteItemFromContainer(self, item):
+        saved_objects.delete_object(item)
