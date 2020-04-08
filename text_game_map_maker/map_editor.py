@@ -9,6 +9,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from text_game_map_maker.utils import yesNoDialog, errorDialog
 from text_game_map_maker import forms, scrollarea, tgmdata
 from text_game_map_maker.door_editor import DoorEditor
+from text_game_map_maker.game_terminal import GameTerminal
 from text_game_map_maker.object_browsers import TileItemBrowser, SavedItemBrowser
 from text_game_map_maker import tile_button
 from text_game_map_maker.qt_auto_form import QtAutoForm
@@ -596,6 +597,11 @@ class MapEditor(QtWidgets.QDialog):
     def tileIDExists(self, tile_id):
         val = tile.get_tile_by_id(tile_id)
         return val is not None
+
+    def runGameButtonClicked(self):
+        gamewin = GameTerminal(self, json.dumps(self.serialize()))
+        gamewin.setWindowModality(QtCore.Qt.ApplicationModal)
+        gamewin.exec_()
 
     def loadFromSavedGameButtonClicked(self):
         filedialog = QtWidgets.QFileDialog

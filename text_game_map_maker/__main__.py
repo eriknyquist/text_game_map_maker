@@ -64,6 +64,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.loadGameAction.setStatusTip("Load the map data from saved game file")
         self.loadGameAction.triggered.connect(self.widget.loadFromSavedGameButtonClicked)
 
+        self.runGameAction = QtWidgets.QAction("Run game", self)
+        self.runGameAction.setShortcut("Ctrl+X")
+        self.runGameAction.setStatusTip("Run the current project as a playable game")
+        self.runGameAction.triggered.connect(self.widget.runGameButtonClicked)
+
         # Edit menu actions
         self.editTileAction = QtWidgets.QAction("Edit selected tile", self)
         self.editTileAction.setShortcut("Ctrl+E")
@@ -140,6 +145,7 @@ class MainWindow(QtWidgets.QMainWindow):
         fileMenu.addAction(self.loadGameAction)
         fileMenu.addAction(self.saveAction)
         fileMenu.addAction(self.saveAsAction)
+        fileMenu.addAction(self.runGameAction)
 
         editMenu = menu.addMenu("Edit")
         editMenu.addAction(self.editTileAction)
