@@ -599,6 +599,16 @@ class MapEditor(QtWidgets.QDialog):
         return val is not None
 
     def runGameButtonClicked(self):
+        if len(_tiles) == 0:
+            errorDialog(self, "Unable to run game", "No tiles created yet. You "
+                        "must create some tiles before running the game.")
+            return
+
+        if self.startTilePosition is None:
+            errorDialog(self, "Unable to run game", "No start tile is set. You "
+                        "must set a start tile before running the game.")
+            return
+
         gamewin = GameTerminal(self, json.dumps(self.serialize()))
         gamewin.setWindowModality(QtCore.Qt.ApplicationModal)
         gamewin.exec_()
