@@ -56,7 +56,7 @@ class ItemBrowser(QtWidgets.QDialog):
     Abstract implementation of class to browse items contained within another item
     """
 
-    def __init__(self, parent, container):
+    def __init__(self, parent, container, saved_objects_buttons=True):
         super(ItemBrowser, self).__init__(parent=parent)
 
         self.parent = parent
@@ -128,8 +128,11 @@ class ItemBrowser(QtWidgets.QDialog):
         buttonLayout.addWidget(self.addButton)
         buttonLayout.addWidget(self.editButton)
         buttonLayout.addWidget(self.deleteButton)
-        buttonLayout.addWidget(self.savedItemButton)
-        buttonLayout.addWidget(self.saveButton)
+
+        if saved_objects_buttons:
+            buttonLayout.addWidget(self.savedItemButton)
+            buttonLayout.addWidget(self.saveButton)
+
         self.buttonGroupBox = QtWidgets.QGroupBox("")
         self.buttonGroupBox.setLayout(buttonLayout)
 
@@ -331,6 +334,9 @@ class SavedItemBrowser(ItemBrowser):
     Concrete item browser implementation to browse custom objects saved for re-use
     """
 
+    def __init__(self, parent, container):
+        super(SavedItemBrowser, self).__init__(parent, container, saved_objects_buttons=False)
+
     def populateTable(self):
         self.row_items = []
 
@@ -344,7 +350,7 @@ class SavedItemBrowser(ItemBrowser):
         saved_objects.save_object(item)
 
     def getRowInfo(self, item):
-        return item.__class__.__name__, item.name, "Saved objects database"
+        return item.__class__.__name__, item.name, "Saved objects"
 
     def deleteItemFromContainer(self, item):
         saved_objects.delete_object(item)
