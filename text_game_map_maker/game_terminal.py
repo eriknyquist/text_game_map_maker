@@ -7,6 +7,8 @@ from text_game_maker.builder.map_builder import StopWaitingForInput, clear_insta
 from text_game_maker.utils import utils
 from text_game_maker.utils.runner import MapRunner, run_map_from_class
 
+class UpdateSignal(QtCore.QObject):
+	signal = QtCore.pyqtSignal(object)
 
 class GameTerminal(QtWidgets.QDialog):
     def __init__(self, parent, map_data):
@@ -35,6 +37,9 @@ class GameTerminal(QtWidgets.QDialog):
 
         utils.set_printfunc(self.game_terminal_printfunc)
         utils.set_inputfunc(self.game_terminal_inputfunc)
+
+        self.updateSignal = UpdateSignal()
+        self.updateSignal.signal.connect(self.appendText)
 
         self.inputQueue = queue.Queue()
         self.game_thread = threading.Thread(target=self.run_game, args=(map_data,))
@@ -66,6 +71,9 @@ class GameTerminal(QtWidgets.QDialog):
         return self.inputQueue.get()
 
     def game_terminal_printfunc(self, text):
+        self.updateSignal.signal.emit(text)
+
+    def appendText(self, text):
         self.outputWidget.append(text)
         self.outputWidget.ensureCursorVisible()
 
